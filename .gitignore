@@ -1,0 +1,17 @@
+node_modules
+.pnpm-store
+.cursor
+dist
+.wrangler
+.dev.vars
+.env
+.env.*
+!.env.example
+!.dev.vars.example
+coverage
+*.tsbuildinfo
+.DS_Store
+.supabase
+customer-configs/*/
+!customer-configs/_templates/
+!customer-configs/examples/

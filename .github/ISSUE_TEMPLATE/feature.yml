@@ -1,0 +1,25 @@
+name: Feature
+description: A change to product scope
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: Which marketing job is stuck, and for whom?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+    validations:
+      required: true
+  - type: checkboxes
+    id: guardrails
+    attributes:
+      label: Pilot guardrails
+      description: Features outside the pilot wait until a design partner needs them.
+      options:
+        - label: This fits the current sprint in tasks.md, or I accept it may be deferred
+          required: true

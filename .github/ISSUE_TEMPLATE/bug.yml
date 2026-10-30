@@ -1,0 +1,35 @@
+name: Bug
+description: Something in Marketing OS behaves wrongly
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: Do not paste API keys, tokens, or customer data.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      placeholder: main, or a git sha
+    validations:
+      required: true
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Deployment mode
+      options:
+        - self-hosted local
+        - self-hosted Cloudflare
+        - cloud
+        - not running yet (docs only)
+    validations:
+      required: true
