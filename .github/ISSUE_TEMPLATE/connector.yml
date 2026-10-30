@@ -1,0 +1,28 @@
+name: Connector request
+description: Ask for a marketing platform connector
+labels: ["connector"]
+body:
+  - type: input
+    id: platform
+    attributes:
+      label: Platform
+      placeholder: Google Search Console
+    validations:
+      required: true
+  - type: dropdown
+    id: access
+    attributes:
+      label: API access
+      options:
+        - Official API, I can share docs links
+        - Official API, needs a partner application
+        - No public API
+    validations:
+      required: true
+  - type: textarea
+    id: jobs
+    attributes:
+      label: Jobs it should support
+      description: Read metrics, list accounts, or a specific write. Writes need an approval story.
+    validations:
+      required: true

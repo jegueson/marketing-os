@@ -1,0 +1,22 @@
+node_modules
+.pnpm-store
+.cursor
+dist
+.wrangler
+.dev.vars
+.env
+.env.*
+!.env.example
+!.dev.vars.example
+coverage
+*.tsbuildinfo
+.DS_Store
+.supabase
+customer-configs/*/
+!customer-configs/_templates/
+!customer-configs/examples/
+
+# Internal planning. Kept on disk for the maintainer, not published.
+/Planning/
+/objective.md
+/tasks.md

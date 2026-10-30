@@ -1,0 +1,33 @@
+name: Skill proposal
+description: Propose a reusable marketing skill
+labels: ["skill"]
+body:
+  - type: input
+    id: name
+    attributes:
+      label: Skill name
+    validations:
+      required: true
+  - type: textarea
+    id: inputs
+    attributes:
+      label: Inputs and the data it needs
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Output
+      description: What a marketer receives, and how you would tell a wrong answer from a right one.
+    validations:
+      required: true
+  - type: dropdown
+    id: risk
+    attributes:
+      label: Risk
+      options:
+        - Read only
+        - Drafts text or assets
+        - Writes to a marketing tool
+    validations:
+      required: true
