@@ -3,6 +3,9 @@ node_modules
 .cursor
 dist
 .wrangler
+.next
+.open-next
+.mos
 .dev.vars
 .env
 .env.*

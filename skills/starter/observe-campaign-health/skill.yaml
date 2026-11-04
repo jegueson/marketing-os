@@ -1,0 +1,9 @@
+id: starter/observe-campaign-health
+version: 0.0.1
+name: Observe campaign health
+autonomy: observe
+description: Read-only check of connected campaign metrics and data health.
+tools:
+  - mock.list_campaigns
+evals:
+  - fixtures/basic.json

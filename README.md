@@ -4,7 +4,7 @@ The open-source operating system for a marketing team. Connect the stack you alr
 
 The software is free to run. You bring a model key. Specialist help and managed hosting are separate paid offers. See [COMMERCIAL.md](COMMERCIAL.md).
 
-**Status: early.** The app scaffold is in place. Install commands below are the intended interface and are not all implemented yet.
+**Status: pre-alpha (Sprint 1 skeleton).** Local API + web shells, setup wizard, mock connector, and CI are in place. Staging deploy requires Cloudflare/Supabase credentials.
 
 ## What you get
 
@@ -20,13 +20,15 @@ Marketing teams that already have several tools, a CRM and a reporting burden. T
 
 ## Run it yourself
 
-Two targets. The commands below are the intended interface. Until the setup command lands, use `pnpm install`, `pnpm test`, and `pnpm typecheck`.
+Two targets. See [docs/self-hosting.md](docs/self-hosting.md).
 
 **On your machine** (single team, you own backups):
 
 ```bash
 pnpm install
-pnpm mos setup
+pnpm mos setup --mode=self_hosted --email=you@example.com --tenant="My Team" --slug=my-team --model-key=$OPENROUTER_API_KEY
+docker compose -f deploy/docker-compose.yml up -d   # optional local Postgres + Mailpit
+pnpm test
 pnpm dev
 ```
 
@@ -55,8 +57,14 @@ There is no self-service checkout. Cloud workspaces are provisioned after a conv
 
 | Path | What it is |
 | --- | --- |
+| [apps/api](apps/api) | Hono API Worker |
+| [apps/web](apps/web) | Next.js (OpenNext on Workers) |
+| [apps/cli](apps/cli) | `mos` setup / deploy CLI |
+| [packages/](packages) | core, db, ui, schemas, connector-sdk, metrics, api-client |
+| [connectors/mock](connectors/mock) | Deterministic Sprint 1 connector |
 | [docs/adr/](docs/adr/README.md) | Architecture decisions |
 | [docs/architecture/sprint1-schema.md](docs/architecture/sprint1-schema.md) | Database contract for the first schema |
+| [docs/security/sprint1-checklist.md](docs/security/sprint1-checklist.md) | Sprint 1 security checklist |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | How to change the code |
 
 ## Stack

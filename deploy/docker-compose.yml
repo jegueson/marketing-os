@@ -1,0 +1,26 @@
+services:
+  db:
+    image: supabase/postgres:15.8.1.060
+    ports:
+      - "54322:5432"
+    environment:
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - mos_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  mailpit:
+    image: axllent/mailpit:v1.21
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+
+  # API and web run via wrangler/next on the host (`pnpm dev`).
+  # This compose file covers local Postgres + Mailpit for the self-host path.
+
+volumes:
+  mos_pg:

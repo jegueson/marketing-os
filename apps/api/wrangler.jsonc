@@ -1,0 +1,42 @@
+{
+  "name": "marketing-os-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-28",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true,
+    "traces": {
+      "enabled": true
+    }
+  },
+  "vars": {
+    "MOS_DEPLOYMENT_MODE": "self_hosted",
+    "APP_ORIGIN": "http://127.0.0.1:3000"
+  },
+  "queues": {
+    "producers": [
+      {
+        "binding": "OUTBOX_QUEUE",
+        "queue": "mos-outbox"
+      }
+    ],
+    "consumers": [
+      {
+        "queue": "mos-outbox",
+        "max_batch_size": 10,
+        "max_retries": 3,
+        "dead_letter_queue": "mos-outbox-dlq"
+      }
+    ]
+  },
+  "r2_buckets": [
+    {
+      "binding": "ASSETS_BUCKET",
+      "bucket_name": "mos-assets",
+      "preview_bucket_name": "mos-assets-preview"
+    }
+  ],
+  "triggers": {
+    "crons": ["*/5 * * * *"]
+  }
+}

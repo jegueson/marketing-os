@@ -1,5 +1,6 @@
-# Copy to .dev.vars for `wrangler dev`. Gitignored.
-# MOS_DATA_KEY encrypts tenant secrets. Generate a unique value per environment.
-
 MOS_DEPLOYMENT_MODE=self_hosted
-MOS_DATA_KEY=replace-with-a-long-random-string
+APP_ORIGIN=http://127.0.0.1:3000
+DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres
+SUPABASE_URL=http://127.0.0.1:54321
+SUPABASE_JWT_SECRET=replace-me
+MOS_DATA_KEY=replace-with-32-byte-base64

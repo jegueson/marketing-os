@@ -1,0 +1,51 @@
+name: Deploy staging
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+    paths:
+      - "apps/**"
+      - "packages/**"
+      - "connectors/**"
+      - "deploy/**"
+
+jobs:
+  deploy:
+    name: Staging Workers
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - name: Check Cloudflare credentials
+        id: creds
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "CLOUDFLARE_API_TOKEN secret missing; skipping deploy."
+          else
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Deploy API
+        if: steps.creds.outputs.available == 'true'
+        working-directory: apps/api
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: pnpm exec wrangler deploy
+      - name: Smoke healthz
+        if: steps.creds.outputs.available == 'true'
+        env:
+          STAGING_API_URL: ${{ vars.STAGING_API_URL }}
+        run: |
+          if [ -z "$STAGING_API_URL" ]; then
+            echo "STAGING_API_URL not set; skipping smoke"
+            exit 0
+          fi
+          curl -fsS "$STAGING_API_URL/healthz" | grep -q '"success":true'

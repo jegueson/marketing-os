@@ -1,0 +1,10 @@
+version: 1
+checklist:
+  - key: connect_source
+    title: Connect a data source
+  - key: review_cockpit
+    title: Open the cockpit
+  - key: invite_teammates
+    title: Invite teammates
+skills:
+  - starter/observe-campaign-health

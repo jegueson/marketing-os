@@ -7,15 +7,20 @@
     "node": ">=22"
   },
   "scripts": {
+    "dev": "pnpm --parallel --filter @marketing-os/api --filter @marketing-os/web dev",
     "test": "vitest run",
+    "test:e2e": "pnpm --filter @marketing-os/e2e test:api",
     "typecheck": "pnpm -r --if-present typecheck",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "mos": "pnpm --filter @marketing-os/cli exec tsx ./src/bin.ts",
+    "build:web": "pnpm --filter @marketing-os/web build"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",
     "eslint": "^9.36.0",
     "prettier": "^3.6.2",
+    "tsx": "^4.20.5",
     "typescript": "^5.9.2",
     "typescript-eslint": "^8.44.0",
     "vitest": "^3.2.4"
