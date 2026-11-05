@@ -55,6 +55,17 @@ describe("migrations", () => {
     expect(role).toEqual({ rolbypassrls: false, rolsuper: false });
   });
 
+  // Supabase's `postgres` is not a superuser, so SET ROLE app_api needs explicit membership.
+  it("lets the API login role switch to app_api", async () => {
+    const members = await rows<{ member: string }>(
+      `select m.rolname as member from pg_auth_members a
+         join pg_roles r on r.oid = a.roleid
+         join pg_roles m on m.oid = a.member
+        where r.rolname = 'app_api'`,
+    );
+    expect(members.map((m) => m.member)).toContain("postgres");
+  });
+
   it("matches the Drizzle schema (drift check)", async () => {
     const tables = (Object.values(schema) as unknown[]).filter((value): value is PgTable =>
       isTable(value),
