@@ -46,3 +46,25 @@ jobs:
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  rls:
+    name: Migrations and RLS on real Postgres
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.62.10
+
+      - name: Start Postgres
+        run: supabase db start
+
+      - name: Apply every migration from scratch
+        run: supabase db reset --local
+
+      - name: Check RLS and roles
+        run: psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -v ON_ERROR_STOP=1 -f supabase/tests/check_rls.sql
