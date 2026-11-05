@@ -12,5 +12,6 @@ MAILPIT_URL=http://127.0.0.1:54324
 EMAIL_FROM=noreply@marketing-os.local
 # Required in cloud mode; lead intake returns 503 without it.
 TURNSTILE_SECRET_KEY=
-# 32-byte base64 key for credential encryption (`mos setup` generates one).
+# 32-byte base64 key for credential encryption (`openssl rand -base64 32`).
+# Use the same value for `mos setup`.
 MOS_DATA_KEY=
