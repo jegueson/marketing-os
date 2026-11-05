@@ -15,7 +15,9 @@
   },
   "dependencies": {
     "@marketing-os/core": "workspace:*",
+    "@marketing-os/schemas": "workspace:*",
     "@marketing-os/ui": "workspace:*",
+    "@supabase/supabase-js": "^2.119.0",
     "next": "^15.5.4",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
