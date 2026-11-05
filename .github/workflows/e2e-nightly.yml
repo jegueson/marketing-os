@@ -1,0 +1,99 @@
+name: E2E browser journeys
+
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: e2e-nightly
+  cancel-in-progress: true
+
+jobs:
+  journeys:
+    name: Playwright on the local stack
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Enable pnpm
+        run: corepack enable
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.62.10
+
+      - name: Start Supabase (database, auth, gateway, mail)
+        run: supabase start -x studio,imgproxy,edge-runtime,logflare,vector,supavisor,realtime,storage-api,postgres-meta
+
+      - name: Apply migrations
+        run: supabase db reset --local
+
+      - name: Write local env files
+        run: |
+          eval "$(supabase status -o env | grep -E '^(API_URL|DB_URL|ANON_KEY|SERVICE_ROLE_KEY|JWT_SECRET)=')"
+          {
+            # Cloud mode requires a Turnstile secret for lead intake.
+            echo "MOS_DEPLOYMENT_MODE=self_hosted"
+            echo "APP_ORIGIN=http://127.0.0.1:3000"
+            echo "DATABASE_URL=$DB_URL"
+            echo "SUPABASE_URL=$API_URL"
+            echo "SUPABASE_JWKS_URL="
+            echo "SUPABASE_JWT_SECRET=$JWT_SECRET"
+            echo "MAILPIT_URL=http://127.0.0.1:54324"
+            echo "EMAIL_FROM=noreply@marketing-os.local"
+            echo "MOS_DATA_KEY=$(openssl rand -base64 32)"
+          } > apps/api/.dev.vars
+          {
+            echo "NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8787"
+            echo "NEXT_PUBLIC_SUPABASE_URL=$API_URL"
+            echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY"
+          } > apps/web/.env.local
+          {
+            echo "E2E_SUPABASE_URL=$API_URL"
+            echo "E2E_SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
+            echo "E2E_DATABASE_URL=$DB_URL"
+          } >> "$GITHUB_ENV"
+
+      - name: Start API and web
+        run: |
+          (cd apps/api && pnpm exec wrangler dev --ip 127.0.0.1 --port 8787 > /tmp/api.log 2>&1 &)
+          (cd apps/web && pnpm exec next dev -H 127.0.0.1 -p 3000 > /tmp/web.log 2>&1 &)
+          for i in $(seq 1 60); do
+            curl -fsS http://127.0.0.1:8787/healthz > /dev/null && curl -fsS -o /dev/null http://127.0.0.1:3000/login && exit 0
+            sleep 3
+          done
+          echo "Servers did not start"; tail -50 /tmp/api.log /tmp/web.log; exit 1
+
+      - name: Install Chromium
+        run: pnpm --filter @marketing-os/e2e exec playwright install --with-deps chromium
+
+      - name: Run journeys
+        env:
+          E2E_BASE_URL: http://127.0.0.1:3000
+          E2E_MAILPIT_URL: http://127.0.0.1:54324
+        run: pnpm --filter @marketing-os/e2e test
+
+      - name: Server logs on failure
+        if: failure()
+        run: tail -100 /tmp/api.log /tmp/web.log
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: e2e/playwright-report
+          retention-days: 7
