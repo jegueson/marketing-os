@@ -27,3 +27,6 @@ customer-configs/*/
 /Planning/
 /objective.md
 /tasks.md
+
+# drizzle-kit drafts; real migrations live in supabase/migrations
+packages/db/drizzle/

@@ -39,3 +39,20 @@ Drizzle schema files generate SQL migrations with drizzle-kit. Row-level securit
 ### Risks
 
 - Editing a migration that already ran in staging. Never do this. Add a new migration.
+
+## Amendment (2026-11-05)
+
+In practice the migration stream lives in `supabase/migrations`, not in a
+drizzle-kit output folder. Reasons: the Supabase CLI and the Supabase MCP
+`apply_migration` tool both track history there, and most of the SQL (RLS,
+roles, SECURITY DEFINER functions, seeds) is hand-written anyway.
+
+- `supabase/migrations/*.sql` is the schema source. Files are named
+  `<version>_<NNNN>_<name>.sql`; the version must match the one recorded in
+  the target database.
+- `packages/db/src/schema` is the typed layer. It must describe the same
+  tables and columns.
+- `packages/db/src/migrations.test.ts` applies every migration to PGlite and
+  fails when the Drizzle schema and the database drift apart.
+- `drizzle-kit generate` is only a drafting aid. Copy the generated DDL into a
+  new file in `supabase/migrations`; never run `drizzle-kit migrate`.

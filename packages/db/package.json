@@ -12,8 +12,7 @@
   "scripts": {
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "generate": "drizzle-kit generate",
-    "migrate": "drizzle-kit migrate"
+    "generate": "drizzle-kit generate"
   },
   "dependencies": {
     "drizzle-orm": "^0.44.5",
