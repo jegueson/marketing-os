@@ -1,115 +1,83 @@
 /**
- * API-level journey used when Playwright browsers are unavailable in CI.
- * Mirrors lead → convert → connect mock → cockpit and cross-tenant denial.
+ * API-level Sprint 1 journey on real Postgres (PGlite with every migration),
+ * real JWT verification and the real outbox relay and consumer.
+ * Browser journeys live in the Playwright specs.
  */
-import { beforeEach, describe, expect, it } from "vitest";
-import { createApp } from "../../apps/api/src/app";
-import { memoryStore } from "../../apps/api/src/store/memory";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { consumeBatch } from "../../apps/api/src/events/consumer";
+import { relayOutbox, type OutboxMessage } from "../../apps/api/src/events/relay";
+import {
+  createHarness,
+  provisionCustomer,
+  type Harness,
+} from "../../apps/api/src/testing/harness";
 
-const env = {
-  MOS_DEPLOYMENT_MODE: "cloud",
-  APP_ORIGIN: "http://127.0.0.1:3000",
-} as Env;
+describe("sprint 1 journey", () => {
+  let h: Harness;
+  beforeEach(async () => {
+    h = await createHarness({}, "cloud");
+  });
+  afterEach(() => h.close());
 
-const staff = {
-  "content-type": "application/json",
-  "x-user-id": "11111111-1111-1111-1111-111111111111",
-  "x-user-email": "sm@example.com",
-  "x-user-role": "success_manager",
-};
+  it("lead to cockpit, with onboarding updated by the event pipeline", async () => {
+    const sm = await h.user("sm@example.com", "success_manager");
+    const acme = await provisionCustomer(h, sm, "Acme", "owner@acme.test");
+    const base = `/api/v1/workspaces/${acme.workspaceId}`;
 
-describe("sprint1 journeys", () => {
-  beforeEach(() => memoryStore.reset());
+    const me = await h.call<{ memberships: { workspaceId: string; role: string }[] }>("/api/v1/me", {
+      token: acme.admin.token,
+    });
+    expect(me.body.data.memberships).toEqual([
+      expect.objectContaining({ workspaceId: acme.workspaceId, role: "customer_admin" }),
+    ]);
 
-  it("cloud journey: lead to cockpit", async () => {
-    const app = createApp();
-    const create = await app.request(
-      "/api/v1/public/leads",
-      {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          companyName: "Acme",
-          contactName: "Ada",
-          email: "ada@acme.test",
-          intent: "cloud_workspace",
-        }),
-      },
-      env,
+    const conn = await h.call<{ id: string }>(`${base}/connections`, {
+      method: "POST",
+      body: { connectorSlug: "mock", displayName: "Mock data" },
+      token: acme.admin.token,
+    });
+    await h.call(`${base}/connections/${conn.body.data.id}/scopes`, {
+      method: "PUT",
+      body: { resources: [{ resourceType: "account", resourceId: "mock-account-1" }] },
+      token: acme.admin.token,
+    });
+    const tested = await h.call(`${base}/connections/${conn.body.data.id}/test`, {
+      method: "POST",
+      token: acme.admin.token,
+    });
+    expect(tested.status).toBe(200);
+
+    const sent: OutboxMessage[] = [];
+    await relayOutbox(h.testDb.db, { sendBatch: async (batch) => sent.push(...[...batch].map((m) => m.body)) });
+    await consumeBatch(
+      h.testDb.db,
+      sent.map((body) => ({ body, ack: () => {}, retry: () => {} })),
     );
-    const leadId = ((await create.json()) as { data: { id: string } }).data.id;
 
-    for (const status of ["contacted", "discovery", "qualified"] as const) {
-      await app.request(
-        `/api/v1/leads/${leadId}/status`,
-        { method: "PATCH", headers: staff, body: JSON.stringify({ status }) },
-        env,
-      );
-    }
+    const onboarding = await h.call<{ items: { key: string; status: string }[] }>(`${base}/onboarding`, {
+      token: acme.admin.token,
+    });
+    expect(onboarding.body.data.items.find((i) => i.key === "connect_source")?.status).toBe("completed");
 
-    const convert = await app.request(
-      `/api/v1/leads/${leadId}/convert`,
-      { method: "POST", headers: staff },
-      env,
-    );
-    expect(convert.status).toBe(201);
-    const converted = (await convert.json()) as {
-      data: { workspace: { id: string }; tenant: { id: string } };
-    };
+    const cockpit = await h.call<{ header: { freshness: string }; data_health: unknown[] }>(`${base}/cockpit`, {
+      token: acme.admin.token,
+    });
+    expect(cockpit.body.data.header.freshness).toBe("live");
+    expect(cockpit.body.data.data_health).toHaveLength(1);
 
-    const connect = await app.request(
-      "/api/v1/connections",
-      {
-        method: "POST",
-        headers: { ...staff, "x-tenant-id": converted.data.tenant.id },
-        body: JSON.stringify({
-          workspaceId: converted.data.workspace.id,
-          connectorSlug: "mock",
-          displayName: "Mock",
-          scopes: ["campaigns"],
-        }),
-      },
-      env,
-    );
-    expect(connect.status).toBe(201);
-
-    const cockpit = await app.request(
-      `/api/v1/workspaces/${converted.data.workspace.id}/cockpit`,
-      {
-        headers: {
-          ...staff,
-          "x-tenant-id": converted.data.tenant.id,
-          "x-user-role": "customer_admin",
-        },
-      },
-      env,
-    );
-    expect(cockpit.status).toBe(200);
+    const features = await h.call<Record<string, boolean>>("/api/v1/me/features", { token: sm.token });
+    expect(features.body.data["nav.leads_admin"]).toBe(true);
   });
 
-  it("negative: customer cannot see another tenant connection", async () => {
-    const app = createApp();
-    memoryStore.connections.set("c1", {
-      id: "c1",
-      tenantId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
-      workspaceId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
-      connectorSlug: "mock",
-      displayName: "Other",
-      status: "active",
-      scopes: ["campaigns"],
-    });
-    const res = await app.request(
-      "/api/v1/connections",
-      {
-        headers: {
-          "x-user-id": "22222222-2222-2222-2222-222222222222",
-          "x-user-role": "customer_admin",
-          "x-tenant-id": "cccccccc-cccc-cccc-cccc-cccccccccccc",
-        },
-      },
-      env,
-    );
-    const body = (await res.json()) as { data: unknown[] };
-    expect(body.data).toEqual([]);
+  it("customer A cannot read customer B", async () => {
+    const sm = await h.user("sm@example.com", "success_manager");
+    const acme = await provisionCustomer(h, sm, "Acme", "owner@acme.test");
+    const globex = await provisionCustomer(h, sm, "Globex", "owner@globex.test");
+    for (const path of ["cockpit", "connections", "onboarding", "integrations"]) {
+      const res = await h.call(`/api/v1/workspaces/${globex.workspaceId}/${path}`, { token: acme.admin.token });
+      expect(res.status, path).toBe(403);
+    }
+    expect((await h.call("/api/v1/leads", { token: acme.admin.token })).status).toBe(403);
+    expect((await h.call(`/api/v1/console/customers/${globex.tenantId}`, { token: acme.admin.token })).status).toBe(403);
   });
 });

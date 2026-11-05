@@ -6,7 +6,12 @@ interface Env {
   SUPABASE_JWT_SECRET?: string;
   SUPABASE_JWKS_URL?: string;
   APP_ORIGIN?: string;
+  TURNSTILE_SECRET_KEY?: string;
+  MAILPIT_URL?: string;
+  EMAIL_FROM?: string;
   HYPERDRIVE?: Hyperdrive;
   OUTBOX_QUEUE?: Queue;
   ASSETS_BUCKET?: R2Bucket;
+  PUBLIC_LEADS_RATE_LIMITER?: RateLimit;
+  EMAIL?: import("@marketing-os/core").CloudflareSendEmailBinding;
 }

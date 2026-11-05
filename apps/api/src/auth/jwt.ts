@@ -1,4 +1,4 @@
-import { createRemoteJWKSet, jwtVerify, type JWTPayload } from "jose";
+import { createRemoteJWKSet, jwtVerify, type JWTPayload, type JWTVerifyGetKey } from "jose";
 import { UnauthorizedError } from "@marketing-os/core";
 
 export type VerifiedToken = {
@@ -7,48 +7,57 @@ export type VerifiedToken = {
   payload: JWTPayload;
 };
 
-export async function verifySupabaseJwt(
-  token: string,
-  options: { jwksUrl?: string; jwtSecret?: string; audience?: string },
-): Promise<VerifiedToken> {
+export type JwtOptions = {
+  jwksUrl?: string;
+  jwtSecret?: string;
+  audience?: string;
+  issuer?: string;
+};
+
+const jwksCache = new Map<string, JWTVerifyGetKey>();
+
+function jwks(url: string): JWTVerifyGetKey {
+  const cached = jwksCache.get(url);
+  if (cached) return cached;
+  const set = createRemoteJWKSet(new URL(url));
+  jwksCache.set(url, set);
+  return set;
+}
+
+/**
+ * Verifies a Supabase access token. Asymmetric keys (JWKS) are tried first;
+ * the shared secret covers local Supabase and tests.
+ */
+export async function verifySupabaseJwt(token: string, options: JwtOptions): Promise<VerifiedToken> {
+  const verifyOptions = {
+    audience: options.audience ?? "authenticated",
+    ...(options.issuer ? { issuer: options.issuer } : {}),
+  };
+  let payload: JWTPayload | null = null;
   try {
     if (options.jwksUrl) {
-      const JWKS = createRemoteJWKSet(new URL(options.jwksUrl));
-      const { payload } = await jwtVerify(token, JWKS, {
-        audience: options.audience ?? "authenticated",
-      });
-      const userId = typeof payload.sub === "string" ? payload.sub : null;
-      if (!userId) {
-        throw new UnauthorizedError("Token missing subject");
+      try {
+        payload = (await jwtVerify(token, jwks(options.jwksUrl), verifyOptions)).payload;
+      } catch (err) {
+        if (!options.jwtSecret) throw err;
       }
-      const verified: VerifiedToken = { userId, payload };
-      if (typeof payload.email === "string") {
-        verified.email = payload.email;
-      }
-      return verified;
     }
-
-    if (options.jwtSecret) {
+    if (!payload && options.jwtSecret) {
       const key = new TextEncoder().encode(options.jwtSecret);
-      const { payload } = await jwtVerify(token, key, {
-        audience: options.audience ?? "authenticated",
-      });
-      const userId = typeof payload.sub === "string" ? payload.sub : null;
-      if (!userId) {
-        throw new UnauthorizedError("Token missing subject");
-      }
-      const verified: VerifiedToken = { userId, payload };
-      if (typeof payload.email === "string") {
-        verified.email = payload.email;
-      }
-      return verified;
+      payload = (await jwtVerify(token, key, verifyOptions)).payload;
     }
-
-    throw new UnauthorizedError("JWT verification is not configured");
-  } catch (err) {
-    if (err instanceof UnauthorizedError) {
-      throw err;
-    }
+  } catch {
     throw new UnauthorizedError("Invalid or expired token");
   }
+  if (!payload) {
+    throw new UnauthorizedError("JWT verification is not configured");
+  }
+  if (typeof payload.sub !== "string" || payload.sub.length === 0) {
+    throw new UnauthorizedError("Token missing subject");
+  }
+  const verified: VerifiedToken = { userId: payload.sub, payload };
+  if (typeof payload.email === "string") {
+    verified.email = payload.email;
+  }
+  return verified;
 }

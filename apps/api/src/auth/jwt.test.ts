@@ -29,6 +29,35 @@ describe("verifySupabaseJwt", () => {
     ).rejects.toThrow(/Invalid or expired/);
   });
 
+  it("rejects the wrong audience", async () => {
+    const token = await new SignJWT({ sub: "u1" })
+      .setProtectedHeader({ alg: "HS256" })
+      .setSubject("u1")
+      .setAudience("anon")
+      .setExpirationTime("60s")
+      .sign(secret);
+    await expect(
+      verifySupabaseJwt(token, { jwtSecret: "test-secret-key-at-least-32-bytes!!" }),
+    ).rejects.toThrow(/Invalid or expired/);
+  });
+
+  it("rejects a bad signature", async () => {
+    const token = await mint({ sub: "u1" });
+    await expect(
+      verifySupabaseJwt(token, { jwtSecret: "another-secret-key-at-least-32-bytes" }),
+    ).rejects.toThrow(/Invalid or expired/);
+  });
+
+  it("rejects the wrong issuer when one is configured", async () => {
+    const token = await mint({ sub: "u1" });
+    await expect(
+      verifySupabaseJwt(token, {
+        jwtSecret: "test-secret-key-at-least-32-bytes!!",
+        issuer: "https://project.supabase.co/auth/v1",
+      }),
+    ).rejects.toThrow(/Invalid or expired/);
+  });
+
   it("rejects missing token configuration", async () => {
     await expect(verifySupabaseJwt("x.y.z", {})).rejects.toThrow();
   });

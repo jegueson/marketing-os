@@ -10,9 +10,13 @@
     }
   },
   "vars": {
-    "MOS_DEPLOYMENT_MODE": "self_hosted",
-    "APP_ORIGIN": "http://127.0.0.1:3000"
+    "MOS_DEPLOYMENT_MODE": "cloud",
+    "APP_ORIGIN": "https://marketing-os-web.gabriel-candido.workers.dev",
+    "SUPABASE_URL": "https://ilgxtbjjawnkvybvcsqm.supabase.co",
+    "SUPABASE_JWKS_URL": "https://ilgxtbjjawnkvybvcsqm.supabase.co/auth/v1/.well-known/jwks.json"
   },
+  // Onboarding templates are bundled as text (see src/text-modules.d.ts).
+  "rules": [{ "type": "Text", "globs": ["**/*.yaml"], "fallthrough": true }],
   "queues": {
     "producers": [
       {
@@ -24,16 +28,30 @@
       {
         "queue": "mos-outbox",
         "max_batch_size": 10,
-        "max_retries": 3,
+        "max_retries": 5,
         "dead_letter_queue": "mos-outbox-dlq"
       }
     ]
   },
+  // Public lead form: 5 submissions per IP per minute, per Cloudflare location.
+  "ratelimits": [
+    {
+      "name": "PUBLIC_LEADS_RATE_LIMITER",
+      "namespace_id": "1001",
+      "simple": { "limit": 5, "period": 60 }
+    }
+  ],
   "r2_buckets": [
     {
       "binding": "ASSETS_BUCKET",
       "bucket_name": "mos-assets",
       "preview_bucket_name": "mos-assets-preview"
+    }
+  ],
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "7e654828f81d45acb604296b2cfcc34e"
     }
   ],
   "triggers": {

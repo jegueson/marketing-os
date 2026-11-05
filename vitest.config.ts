@@ -1,6 +1,19 @@
-import { defineConfig } from "vitest/config";
+import { readFileSync } from "node:fs";
+import { defineConfig, type Plugin } from "vitest/config";
+
+/** Mirrors the Wrangler `Text` rule: `import x from "./file.yaml"` yields the file contents. */
+function yamlAsText(): Plugin {
+  return {
+    name: "yaml-as-text",
+    load(id) {
+      if (!id.endsWith(".yaml")) return null;
+      return `export default ${JSON.stringify(readFileSync(id, "utf8"))};`;
+    },
+  };
+}
 
 export default defineConfig({
+  plugins: [yamlAsText()],
   esbuild: {
     jsx: "automatic",
   },
