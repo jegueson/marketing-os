@@ -1,0 +1,12 @@
+title = "Marketing OS gitleaks config"
+
+[extend]
+useDefault = true
+
+# Test fixtures that look like keys but are not. Keep this list to exact strings.
+[allowlist]
+description = "Known fake keys used in tests"
+regexTarget = "match"
+regexes = [
+  '''sk-or-v1-testkey-123456''',
+]
