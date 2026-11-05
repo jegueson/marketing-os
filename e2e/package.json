@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "test": "playwright test",
-    "test:api": "vitest run"
+    "test:api": "vitest run --root .. e2e/"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",
