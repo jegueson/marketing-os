@@ -47,7 +47,8 @@ const TURNSTILE_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify
 export class TurnstileVerifier implements CaptchaVerifier {
   constructor(
     private readonly secret: string,
-    private readonly fetchImpl: typeof fetch = fetch,
+    // Wrapped: Workers throws "Illegal invocation" when global fetch is called as a method.
+    private readonly fetchImpl: typeof fetch = (...args) => fetch(...args),
   ) {}
 
   async verify(token: string | undefined, remoteIp: string | null): Promise<CaptchaResult> {

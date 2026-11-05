@@ -34,7 +34,8 @@ export class MailpitEmailSender implements EmailSender {
   constructor(
     private readonly baseUrl: string,
     private readonly from: string,
-    private readonly fetchImpl: typeof fetch = fetch,
+    // Wrapped: Workers throws "Illegal invocation" when global fetch is called as a method.
+    private readonly fetchImpl: typeof fetch = (...args) => fetch(...args),
   ) {}
 
   async send(message: EmailMessage): Promise<{ id: string }> {
