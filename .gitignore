@@ -12,6 +12,8 @@ dist
 !.env.example
 !.dev.vars.example
 coverage
+test-results
+playwright-report
 *.tsbuildinfo
 .DS_Store
 .supabase

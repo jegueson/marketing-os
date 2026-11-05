@@ -51,7 +51,9 @@
   "hyperdrive": [
     {
       "binding": "HYPERDRIVE",
-      "id": "7e654828f81d45acb604296b2cfcc34e"
+      "id": "7e654828f81d45acb604296b2cfcc34e",
+      // `wrangler dev` only: the default local `supabase start` database.
+      "localConnectionString": "postgresql://postgres:postgres@127.0.0.1:54322/postgres"
     }
   ],
   "triggers": {

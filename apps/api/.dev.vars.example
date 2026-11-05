@@ -1,0 +1,16 @@
+# Copy to apps/api/.dev.vars for `wrangler dev`. Values come from `supabase status -o env`.
+MOS_DEPLOYMENT_MODE=self_hosted
+APP_ORIGIN=http://127.0.0.1:3000
+DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres
+SUPABASE_URL=http://127.0.0.1:54321
+# Cloud projects with asymmetric signing keys: https://<ref>.supabase.co/auth/v1/.well-known/jwks.json
+SUPABASE_JWKS_URL=
+# Local `supabase start` signs with a shared secret: JWT_SECRET from `supabase status -o env`.
+SUPABASE_JWT_SECRET=
+# Local Mailpit from `supabase start`. In cloud, the EMAIL binding is used instead.
+MAILPIT_URL=http://127.0.0.1:54324
+EMAIL_FROM=noreply@marketing-os.local
+# Required in cloud mode; lead intake returns 503 without it.
+TURNSTILE_SECRET_KEY=
+# 32-byte base64 key for credential encryption (`mos setup` generates one).
+MOS_DATA_KEY=
