@@ -4,7 +4,13 @@
  * Needs E2E_BASE_URL, E2E_SUPABASE_URL, E2E_SUPABASE_SERVICE_ROLE_KEY and E2E_MAILPIT_URL.
  * See docs/self-hosting.md "End-to-end tests".
  */
+import { spawnSync } from "node:child_process";
+import { randomBytes } from "node:crypto";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { expect, test, type Page } from "@playwright/test";
+
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
 const supabaseUrl = process.env.E2E_SUPABASE_URL;
 const serviceKey = process.env.E2E_SUPABASE_SERVICE_ROLE_KEY;
@@ -46,6 +52,47 @@ async function signIn(page: Page, email: string, next: string) {
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
 }
 
+async function connectMockAndCheckCockpit(page: Page) {
+  await page.getByRole("link", { name: "Integrations" }).click();
+  await page.getByRole("button", { name: "Connect" }).first().click();
+  await page.getByLabel(/Demo Ads Account/).check();
+  await page.getByRole("button", { name: "Step 3: save and test connection" }).click();
+  await expect(page.getByText(/: active, 1 resources selected/)).toBeVisible();
+  await page.getByRole("link", { name: "Cockpit" }).click();
+  await expect(page.getByText(/data live/)).toBeVisible();
+  await expect(page.getByRole("cell", { name: "healthy" })).toBeVisible();
+}
+
+test("setup wizard install: admin signs in, connects mock and sees the cockpit", async ({ page }) => {
+  test.skip(!process.env.E2E_DATABASE_URL, "Set E2E_DATABASE_URL to run the setup wizard journey");
+  const run = Date.now();
+  const email = `admin+${run}@e2e.test`;
+  const setup = spawnSync(
+    "pnpm",
+    ["--filter", "@marketing-os/cli", "exec", "tsx", "src/bin.ts", "setup", `--email=${email}`, `--slug=e2e-${run}`, "--tenant=E2E Install"],
+    {
+      cwd: repoRoot,
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        DATABASE_URL: process.env.E2E_DATABASE_URL,
+        SUPABASE_URL: supabaseUrl,
+        SUPABASE_SERVICE_ROLE_KEY: serviceKey,
+        MOS_DATA_KEY: randomBytes(32).toString("base64"),
+        MOS_ADMIN_PASSWORD: password,
+        MOS_MODEL_API_KEY: "sk-or-v1-e2e-not-a-real-key",
+      },
+    },
+  );
+  expect(setup.status, setup.stderr).toBe(0);
+  expect(setup.stdout).not.toContain("sk-or-v1-e2e");
+
+  await signIn(page, email, "/portal");
+  await expect(page.getByRole("heading", { name: "Customer portal" })).toBeVisible();
+  await expect(page.getByText("E2E Install · Default")).toBeVisible();
+  await connectMockAndCheckCockpit(page);
+});
+
 test("visitor lead becomes a customer who connects a source and sees the cockpit", async ({ browser }) => {
   const run = Date.now();
   const company = `E2E Co ${run}`;
@@ -85,13 +132,5 @@ test("visitor lead becomes a customer who connects a source and sees the cockpit
   await customer.getByRole("link", { name: "Continue to onboarding" }).click();
   await expect(customer.getByRole("heading", { name: "Onboarding" })).toBeVisible();
 
-  await customer.getByRole("link", { name: "Integrations" }).click();
-  await customer.getByRole("button", { name: "Connect" }).first().click();
-  await customer.getByLabel(/Demo Ads Account/).check();
-  await customer.getByRole("button", { name: "Step 3: save and test connection" }).click();
-  await expect(customer.getByText(/: active, 1 resources selected/)).toBeVisible();
-
-  await customer.getByRole("link", { name: "Cockpit" }).click();
-  await expect(customer.getByText(/data live/)).toBeVisible();
-  await expect(customer.getByRole("cell", { name: "healthy" })).toBeVisible();
+  await connectMockAndCheckCockpit(customer);
 });

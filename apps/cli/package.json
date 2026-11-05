@@ -12,6 +12,8 @@
   },
   "dependencies": {
     "@marketing-os/core": "workspace:*",
+    "@marketing-os/db": "workspace:*",
+    "drizzle-orm": "^0.44.7",
     "zod": "^3.25.76"
   },
   "devDependencies": {

@@ -1,117 +1,120 @@
-import { createHash, randomBytes } from "node:crypto";
-import { mkdir, readFile, writeFile, access } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { chmod, mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
-import { isDeploymentMode } from "@marketing-os/core";
+import { encryptSecret, importMasterKey, isDeploymentMode } from "@marketing-os/core";
+import type { Database } from "@marketing-os/db";
+import type { AuthAdmin } from "./auth-admin";
+import { provisionInstall } from "./install";
+
+const DATA_KEY_VERSION = 1;
 
 const setupInputSchema = z.object({
   deploymentMode: z.string(),
-  adminEmail: z.string().email(),
-  tenantName: z.string().min(2),
-  tenantSlug: z.string().regex(/^[a-z0-9-]+$/),
+  adminEmail: z.string().trim().toLowerCase().email(),
+  adminPassword: z.string().min(12, "Admin password must be at least 12 characters"),
+  tenantName: z.string().trim().min(2).max(200),
+  tenantSlug: z.string().regex(/^[a-z0-9-]+$/, "Slug may use lowercase letters, digits and dashes"),
   modelProvider: z.enum(["openrouter", "openai_compatible", "openai", "anthropic"]).default("openrouter"),
   modelApiKey: z.string().min(16),
   force: z.boolean().default(false),
 });
 
-export type SetupInput = z.infer<typeof setupInputSchema>;
+export type SetupInput = z.input<typeof setupInputSchema>;
+
+export type SetupDeps = {
+  db: Database;
+  auth: AuthAdmin;
+  /** Base64 of 32 random bytes; the same value goes into the API's MOS_DATA_KEY. */
+  dataKey: string;
+};
 
 export type SetupResult = {
   configPath: string;
   adminEmail: string;
+  tenantId: string;
+  workspaceId: string;
   tenantSlug: string;
   deploymentMode: string;
   modelProvider: string;
-  /** Never the raw key — fingerprint only. */
+  /** Never the raw key: a short fingerprint only. */
   modelKeyFingerprint: string;
   created: boolean;
 };
+
+export class SetupError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "SetupError";
+  }
+}
 
 function fingerprint(secret: string): string {
   return createHash("sha256").update(secret).digest("hex").slice(0, 12);
 }
 
-function encryptAtRest(secret: string, masterKey: Buffer): string {
-  // Placeholder envelope until Workers WebCrypto service; local setup stores ciphertext blob.
-  const nonce = randomBytes(12);
-  const key = createHash("sha256").update(masterKey).digest();
-  const payload = Buffer.from(secret, "utf8");
-  const mixed = Buffer.alloc(payload.length);
-  for (let i = 0; i < payload.length; i += 1) {
-    mixed[i] = payload[i]! ^ key[i % key.length]!;
+async function loadDataKey(encoded: string): Promise<CryptoKey> {
+  const raw = Buffer.from(encoded, "base64");
+  if (raw.length !== 32) {
+    throw new SetupError("MOS_DATA_KEY must be 32 bytes, base64 encoded (openssl rand -base64 32)");
   }
-  return Buffer.concat([nonce, mixed]).toString("base64");
+  return importMasterKey(new Uint8Array(raw));
 }
 
-export async function runSetup(
-  cwd: string,
-  raw: SetupInput,
-  options?: { masterKey?: Buffer },
-): Promise<SetupResult> {
+/**
+ * First-run wizard. Creates the platform admin in Supabase Auth, the tenant,
+ * workspace and membership in Postgres, and stores the model key encrypted
+ * under MOS_DATA_KEY in `.mos/setup.json`. Safe to run again.
+ */
+export async function runSetup(cwd: string, raw: SetupInput, deps: SetupDeps): Promise<SetupResult> {
   const input = setupInputSchema.parse(raw);
   if (!isDeploymentMode(input.deploymentMode)) {
-    throw new Error(`Invalid deployment mode: ${input.deploymentMode}`);
+    throw new SetupError(`Invalid deployment mode: ${input.deploymentMode}`);
   }
-  if (input.modelApiKey.toLowerCase().includes("password") || input.modelApiKey.length < 16) {
-    throw new Error("Refusing weak model API key");
+  if (input.modelApiKey.toLowerCase().includes("password")) {
+    throw new SetupError("Refusing weak model API key");
   }
+  const dataKey = await loadDataKey(deps.dataKey);
+
+  const admin = await deps.auth.ensureUser(input.adminEmail, input.adminPassword);
+  await deps.auth.setStaffRole(admin.id, "platform_admin");
+  const install = await provisionInstall(deps.db, {
+    adminUserId: admin.id,
+    adminEmail: input.adminEmail,
+    tenantName: input.tenantName,
+    tenantSlug: input.tenantSlug,
+  });
 
   const dir = path.join(cwd, ".mos");
   const configPath = path.join(dir, "setup.json");
-  try {
-    await access(configPath);
-    if (!input.force) {
-      const existing = JSON.parse(await readFile(configPath, "utf8")) as SetupResult & {
-        modelApiKeyCiphertext?: string;
-      };
-      return {
-        configPath,
-        adminEmail: existing.adminEmail,
-        tenantSlug: existing.tenantSlug,
-        deploymentMode: existing.deploymentMode,
-        modelProvider: existing.modelProvider,
-        modelKeyFingerprint: existing.modelKeyFingerprint,
-        created: false,
-      };
-    }
-  } catch {
-    // first run
-  }
-
-  const masterKey = options?.masterKey ?? randomBytes(32);
-  const ciphertext = encryptAtRest(input.modelApiKey, masterKey);
   await mkdir(dir, { recursive: true });
-  const result: SetupResult & { modelApiKeyCiphertext: string } = {
-    configPath,
-    adminEmail: input.adminEmail,
-    tenantSlug: input.tenantSlug,
-    deploymentMode: input.deploymentMode,
-    modelProvider: input.modelProvider,
-    modelKeyFingerprint: fingerprint(input.modelApiKey),
-    modelApiKeyCiphertext: ciphertext,
-    created: true,
-  };
-  const publicResult: SetupResult = {
-    configPath: result.configPath,
-    adminEmail: result.adminEmail,
-    tenantSlug: result.tenantSlug,
-    deploymentMode: result.deploymentMode,
-    modelProvider: result.modelProvider,
-    modelKeyFingerprint: result.modelKeyFingerprint,
-    created: result.created,
-  };
   await writeFile(
     configPath,
     JSON.stringify(
       {
-        ...publicResult,
-        modelApiKeyCiphertext: ciphertext,
-        tenantName: input.tenantName,
-        starterSkillsSeeded: true,
+        deploymentMode: input.deploymentMode,
+        tenantId: install.tenantId,
+        workspaceId: install.workspaceId,
+        modelProvider: input.modelProvider,
+        modelKeyFingerprint: fingerprint(input.modelApiKey),
+        modelApiKey: await encryptSecret(input.modelApiKey, dataKey, DATA_KEY_VERSION),
+        starterSkillsSeeded: false,
       },
       null,
       2,
     ),
   );
-  return publicResult;
+  await chmod(configPath, 0o600);
+
+  return {
+    configPath,
+    adminEmail: input.adminEmail,
+    tenantId: install.tenantId,
+    workspaceId: install.workspaceId,
+    tenantSlug: input.tenantSlug,
+    deploymentMode: input.deploymentMode,
+    modelProvider: input.modelProvider,
+    modelKeyFingerprint: fingerprint(input.modelApiKey),
+    created: install.created || admin.created,
+  };
 }
