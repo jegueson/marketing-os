@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import nextConfig from "../../next.config";
 import { createApiClient } from "./api";
 import { nextLeadStatuses, pickWorkspace, safeNext, type Membership } from "./workspace";
 
@@ -76,5 +77,16 @@ describe("workspace helpers", () => {
     expect(safeNext("//evil.test")).toBeNull();
     expect(safeNext("https://evil.test")).toBeNull();
     expect(safeNext(null)).toBeNull();
+  });
+});
+
+describe("security headers", () => {
+  it("applies anti-framing and nosniff headers to every route", async () => {
+    const rules = (await nextConfig.headers?.()) ?? [];
+    const all = rules.find((r) => r.source === "/:path*");
+    const values = Object.fromEntries((all?.headers ?? []).map((h) => [h.key, h.value]));
+    expect(values["X-Frame-Options"]).toBe("DENY");
+    expect(values["X-Content-Type-Options"]).toBe("nosniff");
+    expect(values["Strict-Transport-Security"]).toContain("max-age=");
   });
 });
