@@ -41,8 +41,12 @@ export {
 export {
   assertEventEnvelope,
   eventEnvelopeSchema,
+  eventTypes,
+  isPlatformEvent,
+  platformEventTypes,
   relayReady,
   type EventEnvelope,
+  type EventType,
   type OutboxRecord,
 } from "./outbox";
 export { formatLogLine, redactPii, type LogFields } from "./telemetry";
@@ -55,9 +59,11 @@ export {
   type SyncJob,
 } from "./scheduler";
 export {
+  CloudflareEmailSender,
+  EmailDeliveryError,
   InMemoryEmailSender,
+  MailpitEmailSender,
+  type CloudflareSendEmailBinding,
   type EmailMessage,
   type EmailSender,
 } from "./email";
-
-
