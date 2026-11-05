@@ -1,4 +1,8 @@
--- Tenant context helpers. set_config third arg must be true (transaction-local) under Hyperdrive.
+-- Extensions + app schema helpers
+CREATE EXTENSION IF NOT EXISTS "pgcrypto" WITH SCHEMA extensions;
+CREATE EXTENSION IF NOT EXISTS "vector" WITH SCHEMA extensions;
+CREATE SCHEMA IF NOT EXISTS app;
+
 CREATE OR REPLACE FUNCTION app.current_tenant_id()
 RETURNS uuid
 LANGUAGE sql

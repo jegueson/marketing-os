@@ -7,6 +7,7 @@ import {
   inet,
   jsonb,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   unique,
@@ -58,6 +59,18 @@ export const outboxEvents = pgTable(
       sql`${table.status} in ('pending','processing','delivered','failed')`,
     ),
   ],
+);
+
+export const eventReceipts = pgTable(
+  "event_receipts",
+  {
+    eventId: bigint("event_id", { mode: "number" })
+      .notNull()
+      .references(() => outboxEvents.id),
+    handler: text("handler").notNull(),
+    processedAt: timestamp("processed_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.eventId, table.handler] })],
 );
 
 export const featureFlags = pgTable("feature_flags", {

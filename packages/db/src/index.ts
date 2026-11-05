@@ -1,2 +1,3 @@
 export * from "./schema";
-export { createDb, type Db } from "./client";
+export { createDb, type DbHandle } from "./client";
+export { selectRows, setTenant, withContext, type Database, type DbContext, type Schema } from "./context";
