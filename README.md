@@ -4,7 +4,7 @@ The open-source operating system for a marketing team. Connect the stack you alr
 
 The software is free to run. You bring a model key. Specialist help and managed hosting are separate paid offers. See [COMMERCIAL.md](COMMERCIAL.md).
 
-**Status: pre-alpha (Sprint 1 skeleton).** Local API + web shells, setup wizard, mock connector, and CI are in place. Staging deploy requires Cloudflare/Supabase credentials.
+**Status: pre-alpha (Sprint 1).** Lead intake, provisioning, invitations, the mock connector, the cockpit shell and the specialist console work end to end on the local stack, with `mos setup` for a single-tenant install. Real data connectors arrive in Sprint 2. See [docs/self-hosting.md](docs/self-hosting.md).
 
 ## What you get
 
