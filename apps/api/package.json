@@ -18,7 +18,7 @@
     "@marketing-os/schemas": "workspace:*",
     "drizzle-orm": "^0.44.7",
     "hono": "^4.9.8",
-    "jose": "^6.1.0",
+    "jose": "^6.2.15",
     "yaml": "^2.9.1",
     "zod": "^3.25.76"
   },
