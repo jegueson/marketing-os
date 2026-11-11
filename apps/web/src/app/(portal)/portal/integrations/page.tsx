@@ -53,6 +53,26 @@ function ConnectionSetup({
     chosen ??
     new Set(options.filter((o) => o.selected).map((o) => `${o.resourceType}:${o.resourceId}`));
 
+  async function reconnect() {
+    setMessage(null);
+    const refreshed = await auth.api<{ refreshed: true }>(`${base}/connections/${connection.id}/oauth/refresh`, {
+      method: "POST",
+    });
+    if (refreshed.success) {
+      setMessage({ ok: true, text: "Reconnected." });
+      await onChange();
+      return;
+    }
+    const start = await auth.api<{ authorizationUrl: string }>(`${base}/connections/${connection.id}/oauth/start`, {
+      method: "POST",
+    });
+    if (!start.success || !start.data?.authorizationUrl) {
+      setMessage({ ok: false, text: start.error?.message ?? refreshed.error?.message ?? "Reconnect failed" });
+      return;
+    }
+    window.location.assign(start.data.authorizationUrl);
+  }
+
   async function saveAndTest(options: ResourceOption[]) {
     setMessage(null);
     const keys = selected(options);
@@ -88,6 +108,9 @@ function ConnectionSetup({
       </h3>
       {connection.errorMessage ? (
         <ErrorState title="Last test failed" body={connection.errorMessage} />
+      ) : null}
+      {connection.status === "expired" || connection.status === "error" ? (
+        <Button onClick={() => void reconnect()}>Reconnect</Button>
       ) : null}
       <View state={resources}>
         {(options) => {

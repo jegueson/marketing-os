@@ -23,6 +23,7 @@ export type Harness = {
   env: Env;
   user(email: string, staffRole?: StaffRole): Promise<TestUser>;
   call<T>(path: string, init?: { method?: string; body?: unknown; token?: string }): Promise<{ status: number; body: Envelope<T> }>;
+  request(path: string, init?: { method?: string; body?: unknown; token?: string }): Promise<Response>;
   close(): Promise<void>;
 };
 
@@ -33,6 +34,7 @@ export type Harness = {
 export async function createHarness(
   overrides: Partial<AppDeps> = {},
   mode: "self_hosted" | "cloud" = "self_hosted",
+  envOverrides: Partial<Env> = {},
 ): Promise<Harness> {
   const testDb = await createTestDatabase();
   const emails = new InMemoryEmailSender();
@@ -48,8 +50,24 @@ export async function createHarness(
     APP_ORIGIN: "http://127.0.0.1:3000",
     DATABASE_URL: "pglite://memory",
     SUPABASE_JWT_SECRET: JWT_SECRET,
+    ...envOverrides,
   } as Env;
   const secret = new TextEncoder().encode(JWT_SECRET);
+
+  async function request(path: string, init: { method?: string; body?: unknown; token?: string } = {}) {
+    const headers: Record<string, string> = {};
+    if (init.body !== undefined) headers["content-type"] = "application/json";
+    if (init.token) headers["authorization"] = `Bearer ${init.token}`;
+    return app.request(
+      path,
+      {
+        method: init.method ?? "GET",
+        headers,
+        ...(init.body !== undefined ? { body: JSON.stringify(init.body) } : {}),
+      },
+      env,
+    );
+  }
 
   return {
     testDb,
@@ -69,20 +87,10 @@ export async function createHarness(
       return { id, email, token };
     },
     async call<T>(path: string, init: { method?: string; body?: unknown; token?: string } = {}) {
-      const headers: Record<string, string> = {};
-      if (init.body !== undefined) headers["content-type"] = "application/json";
-      if (init.token) headers["authorization"] = `Bearer ${init.token}`;
-      const res = await app.request(
-        path,
-        {
-          method: init.method ?? "GET",
-          headers,
-          ...(init.body !== undefined ? { body: JSON.stringify(init.body) } : {}),
-        },
-        env,
-      );
+      const res = await request(path, init);
       return { status: res.status, body: (await res.json()) as Envelope<T> };
     },
+    request,
     close: () => testDb.close(),
   };
 }

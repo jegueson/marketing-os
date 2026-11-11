@@ -5,3 +5,4 @@ export * from "./onboarding";
 export * from "./integrations";
 export * from "./platform";
 export * from "./metrics";
+export * from "./oauth";

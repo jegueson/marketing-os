@@ -17,6 +17,7 @@ import { cockpitRoutes } from "./routes/cockpit";
 import { onboardingRoutes } from "./routes/onboarding";
 import { invitationRoutes } from "./routes/invitations";
 import { consoleRoutes } from "./routes/console";
+import { oauthRoutes } from "./routes/oauth";
 
 export type { HonoEnv } from "./context";
 
@@ -99,6 +100,7 @@ export function createApp(overrides: Partial<AppDeps> = {}) {
   app.route("/", meRoutes);
   app.route("/", leadsRoutes);
   app.route("/", integrationsRoutes);
+  app.route("/", oauthRoutes);
   app.route("/", cockpitRoutes);
   app.route("/", onboardingRoutes);
   app.route("/", invitationRoutes);

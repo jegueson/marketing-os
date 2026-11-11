@@ -8,6 +8,8 @@ import { createDb, type DbHandle } from "@marketing-os/db";
 import type { Connector } from "@marketing-os/connector-sdk";
 import { mockConnector } from "@marketing-os/connector-mock";
 import type { AppEnv } from "./env";
+import type { OAuthProvider } from "./lib/mock-oauth";
+import { createMockOAuthProvider } from "./lib/mock-oauth";
 import { noopProvisioningHooks, type ProvisioningHooks } from "./services/provisioning";
 import {
   BindingRateLimiter,
@@ -27,6 +29,7 @@ export type AppDeps = {
   leadRateLimiter: (bindings: Env) => RateLimiter;
   captcha: (env: AppEnv) => CaptchaVerifier;
   connectors: ConnectorRegistry;
+  oauthProviders: ReadonlyMap<string, OAuthProvider>;
   provisioningHooks: ProvisioningHooks;
 };
 
@@ -53,5 +56,6 @@ export const defaultDeps: AppDeps = {
     return new DisabledCaptcha(env.deploymentMode === "cloud" ? "not_configured" : "ok");
   },
   connectors: new Map<string, Connector>([["mock", mockConnector]]),
+  oauthProviders: new Map<string, OAuthProvider>([["mock", createMockOAuthProvider()]]),
   provisioningHooks: noopProvisioningHooks,
 };
