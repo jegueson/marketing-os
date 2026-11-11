@@ -51,7 +51,7 @@ Web (inlined at build time, all public):
   `STAGING_TURNSTILE_SITE_KEY`. Until then `POST /api/v1/public/leads` returns 503.
 - **Email**: the `send_email` binding needs a sender domain onboarded to
   Cloudflare Email Routing. Until then invitations report `emailDelivery: "failed"`.
-- **MOS_DATA_KEY**: not needed until connectors store credentials (Sprint 2).
+- **MOS_DATA_KEY**: required before a connection stores credentials. Keep the previous value as `MOS_DATA_KEY_V1` when you rotate, and back it up outside Cloudflare. See the self-host guide.
 
 ```bash
 cd apps/api

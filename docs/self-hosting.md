@@ -44,6 +44,12 @@ pnpm mos setup --email=you@example.com --tenant="My Team" --slug=my-team
 
 Running it again is safe: it reports `created: false` and changes nothing.
 
+### Back up the data key
+
+`MOS_DATA_KEY` encrypts connector credentials and the model key. Losing it makes those secrets unreadable. There is no recovery path in the database. Store a copy in the same password manager you use for the Supabase service role key, outside the git repository and outside `.dev.vars`.
+
+To rotate, generate a new 32-byte key, set `MOS_DATA_KEY` to it, set `MOS_DATA_KEY_VERSION` to the next integer, and keep the previous value as `MOS_DATA_KEY_V1` (or `MOS_DATA_KEY_V2`, matching the old version). The API re-encrypts a credential the next time it is read. After every stored row uses the new version, delete the old secret. Do not delete it before that.
+
 ```bash
 pnpm dev                           # API on :8787, web on :3000
 ```

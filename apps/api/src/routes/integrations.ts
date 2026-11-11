@@ -22,6 +22,7 @@ import { requirePrincipal } from "../auth/principal";
 import { requireWorkspace } from "../auth/access";
 import { run, tenantContext, type AppContext } from "../context";
 import { enqueueEvent, recordAudit } from "../lib/events";
+import { keyRingFromConfig, loadConnectionCredentials } from "../lib/credentials";
 import { parseBody, parseUuidParam } from "../lib/http";
 import {
   apiSuccessSchema,
@@ -180,13 +181,17 @@ async function loadConnection(tx: Database, workspaceId: string, id: string): Pr
   return row;
 }
 
-function connectorContext(connection: LoadedConnection): ConnectorContext {
+function connectorContext(connection: LoadedConnection, credentials: Record<string, string>): ConnectorContext {
   return {
     tenantId: connection.tenantId,
     workspaceId: connection.workspaceId,
     connectionId: connection.id,
-    credentials: {},
+    credentials,
   };
+}
+
+async function credentialsFor(c: AppContext, tx: Database, connectionId: string): Promise<Record<string, string>> {
+  return loadConnectionCredentials(tx, connectionId, await keyRingFromConfig(c.get("config")));
 }
 
 function auditBase(c: AppContext) {
@@ -275,14 +280,15 @@ integrationsRoutes.openapi(createConnectionRoute, async (c) => {
 integrationsRoutes.openapi(listResourcesRoute, async (c) => {
     const workspaceId = parseUuidParam(c, "workspaceId");
     const id = parseUuidParam(c, "id");
-    const { connection, selected } = await run(c, tenantContext(c), async (tx) => ({
+    const { connection, selected, credentials } = await run(c, tenantContext(c), async (tx) => ({
       connection: await loadConnection(tx, workspaceId, id),
+      credentials: await credentialsFor(c, tx, id),
       selected: await tx
         .select({ resourceType: dataScopes.resourceType, resourceId: dataScopes.resourceId })
         .from(dataScopes)
         .where(and(eq(dataScopes.connectionId, id), eq(dataScopes.isActive, true))),
     }));
-    const resources = await connectorFor(c, connection.slug).listResources(connectorContext(connection));
+    const resources = await connectorFor(c, connection.slug).listResources(connectorContext(connection, credentials));
     const chosen = new Set(selected.map((s) => `${s.resourceType}:${s.resourceId}`));
     return c.json(
       ok(
@@ -305,7 +311,8 @@ integrationsRoutes.openapi(selectScopesRoute, async (c) => {
     const access = c.get("access");
     const result = await run(c, tenantContext(c), async (tx) => {
       const connection = await loadConnection(tx, workspaceId, id);
-      const offered = await connectorFor(c, connection.slug).listResources(connectorContext(connection));
+      const credentials = await credentialsFor(c, tx, id);
+      const offered = await connectorFor(c, connection.slug).listResources(connectorContext(connection, credentials));
       const offeredKeys = new Set(offered.map((r) => `${r.kind}:${r.name}`));
       const unknown = input.resources.filter((r) => !offeredKeys.has(`${r.resourceType}:${r.resourceId}`));
       if (unknown.length) {
@@ -362,7 +369,8 @@ integrationsRoutes.openapi(testConnectionRoute, async (c) => {
         };
       } else {
         try {
-          const health = await connectorFor(c, connection.slug).health(connectorContext(connection));
+          const credentials = await credentialsFor(c, tx, id);
+          const health = await connectorFor(c, connection.slug).health(connectorContext(connection, credentials));
           result =
             health.status === "error"
               ? {

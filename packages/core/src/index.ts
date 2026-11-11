@@ -29,8 +29,13 @@ export { isEnabled, type FlagContext } from "./flags";
 export {
   decryptSecret,
   encryptSecret,
+  fromStoredCredential,
   importMasterKey,
+  openKeyRing,
+  toStoredCredential,
   type EncryptedBlob,
+  type KeyMaterial,
+  type KeyRing,
 } from "./crypto";
 export {
   buildAuthorizationUrl,

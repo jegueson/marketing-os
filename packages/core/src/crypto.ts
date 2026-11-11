@@ -52,8 +52,79 @@ export async function decryptSecret(
 }
 
 export async function importMasterKey(raw: Uint8Array): Promise<CryptoKey> {
+  if (raw.byteLength !== 32) {
+    throw new Error("MOS_DATA_KEY must be 32 bytes");
+  }
   return crypto.subtle.importKey("raw", raw as BufferSource, "AES-GCM", false, [
     "encrypt",
     "decrypt",
   ]);
+}
+
+export type KeyMaterial = { version: number; base64: string };
+
+export type KeyRing = {
+  activeVersion: number;
+  seal: (plaintext: string) => Promise<EncryptedBlob>;
+  open: (blob: EncryptedBlob) => Promise<{ plaintext: string; blob: EncryptedBlob; rotated: boolean }>;
+};
+
+function decodeKey(base64: string): Uint8Array {
+  let binary: string;
+  try {
+    binary = atob(base64);
+  } catch {
+    throw new Error("MOS_DATA_KEY is not valid base64");
+  }
+  const raw = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) raw[i] = binary.charCodeAt(i);
+  return raw;
+}
+
+/** Active key plus any previous versions kept for lazy rotation. */
+export async function openKeyRing(activeVersion: number, materials: KeyMaterial[]): Promise<KeyRing> {
+  const keys = new Map<number, CryptoKey>();
+  for (const material of materials) {
+    keys.set(material.version, await importMasterKey(decodeKey(material.base64)));
+  }
+  const active = keys.get(activeVersion);
+  if (!active) throw new Error(`Active data key version ${activeVersion} is not loaded`);
+
+  return {
+    activeVersion,
+    seal(plaintext) {
+      return encryptSecret(plaintext, active, activeVersion);
+    },
+    async open(blob) {
+      const key = keys.get(blob.keyVersion);
+      if (!key) throw new Error(`Unknown data key version ${blob.keyVersion}`);
+      let plaintext: string;
+      try {
+        plaintext = await decryptSecret(blob, key);
+      } catch {
+        throw new Error("Credential ciphertext failed authentication");
+      }
+      if (blob.keyVersion === activeVersion) return { plaintext, blob, rotated: false };
+      return { plaintext, blob: await encryptSecret(plaintext, active, activeVersion), rotated: true };
+    },
+  };
+}
+
+/** Maps the in-memory blob onto credential_references columns (nonce, text key version). */
+export function toStoredCredential(blob: EncryptedBlob): {
+  ciphertext: string;
+  nonce: string;
+  keyVersion: string;
+} {
+  return { ciphertext: blob.ciphertext, nonce: blob.iv, keyVersion: String(blob.keyVersion) };
+}
+
+export function fromStoredCredential(row: {
+  ciphertext: string;
+  nonce: string;
+  keyVersion: string;
+}): EncryptedBlob {
+  const keyVersion = Number(row.keyVersion);
+  if (!Number.isInteger(keyVersion) || keyVersion < 1) throw new Error("Invalid key version");
+  return { ciphertext: row.ciphertext, iv: row.nonce, keyVersion };
 }

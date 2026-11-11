@@ -13,5 +13,9 @@ EMAIL_FROM=noreply@marketing-os.local
 # Required in cloud mode; lead intake returns 503 without it.
 TURNSTILE_SECRET_KEY=
 # 32-byte base64 key for credential encryption (`openssl rand -base64 32`).
-# Use the same value for `mos setup`.
+# Use the same value for `mos setup`. Back this up. Losing it makes stored tokens unreadable.
+# On rotation, point MOS_DATA_KEY at the new key, bump MOS_DATA_KEY_VERSION, and keep the old
+# material as MOS_DATA_KEY_V1 until every credential row has been re-read.
 MOS_DATA_KEY=
+# MOS_DATA_KEY_VERSION=1
+# MOS_DATA_KEY_V1=
