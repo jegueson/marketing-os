@@ -14,6 +14,7 @@ interface Env {
   EMAIL_FROM?: string;
   HYPERDRIVE?: Hyperdrive;
   OUTBOX_QUEUE?: Queue;
+  SYNC_QUEUE?: Queue;
   ASSETS_BUCKET?: R2Bucket;
   PUBLIC_LEADS_RATE_LIMITER?: RateLimit;
   EMAIL?: import("@marketing-os/core").CloudflareSendEmailBinding;

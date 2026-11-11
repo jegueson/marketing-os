@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { deriveDataHealth, planSyncJobs } from "./scheduler";
+import { deriveDataHealth, planBackfillWindows, planSyncJobs, rateLimitBackoffMs } from "./scheduler";
 
 describe("scheduler and data health", () => {
   it("plans due sync jobs", () => {
@@ -18,6 +18,15 @@ describe("scheduler and data health", () => {
     expect(jobs).toHaveLength(1);
   });
 
+  it("splits a 90-day backfill into 30-day chunks and backs off rate limits", () => {
+    const windows = planBackfillWindows(new Date("2026-04-01T15:00:00.000Z"));
+    expect(windows).toHaveLength(3);
+    expect(windows[0]?.start).toBe("2026-01-01T00:00:00.000Z");
+    expect(windows[2]?.end).toBe("2026-04-01T00:00:00.000Z");
+    expect(rateLimitBackoffMs(0)).toBe(1000);
+    expect(rateLimitBackoffMs(3)).toBe(8000);
+    expect(rateLimitBackoffMs(10)).toBe(60_000);
+  });
   it("derives stale health", () => {
     const health = deriveDataHealth({
       connectionId: "c1",

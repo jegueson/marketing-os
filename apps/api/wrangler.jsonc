@@ -22,6 +22,10 @@
       {
         "binding": "OUTBOX_QUEUE",
         "queue": "mos-outbox"
+      },
+      {
+        "binding": "SYNC_QUEUE",
+        "queue": "mos-sync"
       }
     ],
     "consumers": [
@@ -30,6 +34,12 @@
         "max_batch_size": 10,
         "max_retries": 5,
         "dead_letter_queue": "mos-outbox-dlq"
+      },
+      {
+        "queue": "mos-sync",
+        "max_batch_size": 10,
+        "max_retries": 5,
+        "dead_letter_queue": "mos-sync-dlq"
       }
     ]
   },

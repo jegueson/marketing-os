@@ -54,7 +54,23 @@ export function deriveDataHealth(input: {
   };
 }
 
-/** Cron-facing planner: enqueue due connections as sync jobs. */
+/** 90-day backfill split into contiguous chunks, oldest first. */
+export function planBackfillWindows(now: Date, days = 90, chunkDays = 30): { start: string; end: string }[] {
+  const end = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  const start = end - days * 24 * 60 * 60 * 1000;
+  const windows: { start: string; end: string }[] = [];
+  for (let cursor = start; cursor < end; ) {
+    const next = Math.min(end, cursor + chunkDays * 24 * 60 * 60 * 1000);
+    windows.push({ start: new Date(cursor).toISOString(), end: new Date(next).toISOString() });
+    cursor = next;
+  }
+  return windows;
+}
+
+/** Exponential backoff for a rate-limited provider call, capped at one minute. */
+export function rateLimitBackoffMs(attempt: number): number {
+  return Math.min(60_000, 1000 * 2 ** Math.max(0, attempt));
+}
 export function planSyncJobs(
   connections: Array<{
     id: string;

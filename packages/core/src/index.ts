@@ -57,7 +57,9 @@ export {
 export { formatLogLine, redactPii, type LogFields } from "./telemetry";
 export {
   deriveDataHealth,
+  planBackfillWindows,
   planSyncJobs,
+  rateLimitBackoffMs,
   syncJobSchema,
   type DataHealth,
   type DataHealthStatus,

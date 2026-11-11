@@ -10,6 +10,7 @@ import { mockConnector } from "@marketing-os/connector-mock";
 import type { AppEnv } from "./env";
 import type { OAuthProvider } from "./lib/mock-oauth";
 import { createMockOAuthProvider } from "./lib/mock-oauth";
+import type { SyncProducer } from "./sync/engine";
 import { noopProvisioningHooks, type ProvisioningHooks } from "./services/provisioning";
 import {
   BindingRateLimiter,
@@ -30,6 +31,8 @@ export type AppDeps = {
   captcha: (env: AppEnv) => CaptchaVerifier;
   connectors: ConnectorRegistry;
   oauthProviders: ReadonlyMap<string, OAuthProvider>;
+  /** Present when the mos-sync queue binding is configured. */
+  syncQueue?: SyncProducer;
   provisioningHooks: ProvisioningHooks;
 };
 
