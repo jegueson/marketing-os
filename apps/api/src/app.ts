@@ -1,10 +1,12 @@
-import { Hono } from "hono";
+import { HTTPException } from "hono/http-exception";
 import { cors } from "hono/cors";
 import { secureHeaders } from "hono/secure-headers";
+import { z } from "@hono/zod-openapi";
 import { AppError, fail, formatLogLine, ok } from "@marketing-os/core";
 import type { DbHandle } from "@marketing-os/db";
 import { defaultDeps, type AppDeps } from "./deps";
 import { loadEnv } from "./env";
+import { apiSuccessSchema, createRouter, defineRoute, errorResponses, jsonContent } from "./lib/openapi";
 import type { AppContext, HonoEnv } from "./context";
 import { healthRoutes } from "./routes/health";
 import { publicLeadsRoutes } from "./routes/public-leads";
@@ -40,9 +42,22 @@ function closeLater(c: AppContext, handle: DbHandle): Promise<void> | undefined 
   }
 }
 
+const apiRootRoute = defineRoute({
+  method: "get",
+  path: "/api/v1",
+  tags: ["Meta"],
+  responses: {
+    200: jsonContent(
+      apiSuccessSchema(z.object({ name: z.string(), version: z.string() }), "ApiRootResponse"),
+      "API name and version",
+    ),
+    ...errorResponses(500),
+  },
+});
+
 export function createApp(overrides: Partial<AppDeps> = {}) {
   const deps: AppDeps = { ...defaultDeps, ...overrides };
-  const app = new Hono<HonoEnv>();
+  const app = createRouter();
 
   app.use("*", async (c, next) => {
     c.set("requestId", crypto.randomUUID());
@@ -89,7 +104,7 @@ export function createApp(overrides: Partial<AppDeps> = {}) {
   app.route("/", invitationRoutes);
   app.route("/", consoleRoutes);
 
-  app.get("/api/v1", (c) => c.json(ok({ name: "marketing-os-api", version: "0.0.0" })));
+  app.openapi(apiRootRoute, (c) => c.json(ok({ name: "marketing-os-api", version: "0.0.0" }), 200));
 
   app.notFound((c) => c.json(fail("not_found", "Route not found"), 404));
 
@@ -99,6 +114,10 @@ export function createApp(overrides: Partial<AppDeps> = {}) {
         console.error(formatLogLine({ level: "error", message: err.message, ...logFields(c) }));
       }
       return c.json(fail(err.code, err.message, err.details), err.status as 400);
+    }
+    // Malformed JSON bodies are rejected by the OpenAPI validator before our handlers run.
+    if (err instanceof HTTPException && err.status === 400) {
+      return c.json(fail("validation_error", "Invalid request body"), 422);
     }
     console.error(
       formatLogLine({ level: "error", message: err.message, name: err.name, ...logFields(c) }),

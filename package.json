@@ -13,6 +13,8 @@
     "typecheck": "pnpm -r --if-present typecheck",
     "lint": "eslint .",
     "format": "prettier --write .",
+    "openapi:generate": "pnpm --filter @marketing-os/api-client generate",
+    "openapi:check": "pnpm openapi:generate && git diff --exit-code -- packages/openapi/openapi.json packages/api-client/src/generated/schema.ts",
     "mos": "pnpm --filter @marketing-os/cli exec tsx ./src/bin.ts",
     "build:web": "pnpm --filter @marketing-os/web build"
   },

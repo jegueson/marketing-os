@@ -1,17 +1,57 @@
-import { Hono } from "hono";
+import { z } from "@hono/zod-openapi";
 import { and, asc, eq } from "drizzle-orm";
 import { NotFoundError, ok } from "@marketing-os/core";
 import { checklistItemUpdateSchema } from "@marketing-os/schemas";
 import { onboardingChecklistItems, onboardingProjects, type Database } from "@marketing-os/db";
 import { requirePrincipal } from "../auth/principal";
 import { requireWorkspace } from "../auth/access";
-import { run, tenantContext, type HonoEnv } from "../context";
+import { run, tenantContext } from "../context";
 import { recordAudit } from "../lib/events";
 import { parseBody, parseUuidParam } from "../lib/http";
+import {
+  apiSuccessSchema,
+  createRouter,
+  defineRoute,
+  errorResponses,
+  jsonBody,
+  jsonContent,
+  jsonValueSchema,
+  uuidPathParam,
+} from "../lib/openapi";
 
-export const onboardingRoutes = new Hono<HonoEnv>();
+export const onboardingRoutes = createRouter();
 
 const base = "/api/v1/workspaces/:workspaceId/onboarding";
+const openApiBase = "/api/v1/workspaces/{workspaceId}/onboarding";
+
+const getOnboardingRoute = defineRoute({
+  method: "get",
+  path: openApiBase,
+  tags: ["Onboarding"],
+  security: [{ Bearer: [] }],
+  middleware: [requireWorkspace("cockpit:view")],
+  request: { params: z.object({ workspaceId: uuidPathParam("workspaceId") }) },
+  responses: {
+    200: jsonContent(apiSuccessSchema(jsonValueSchema, "OnboardingResponse"), "Onboarding project and checklist"),
+    ...errorResponses(401, 403, 404, 422),
+  },
+});
+
+const updateChecklistItemRoute = defineRoute({
+  method: "patch",
+  path: `${openApiBase}/items/{itemId}`,
+  tags: ["Onboarding"],
+  security: [{ Bearer: [] }],
+  middleware: [requireWorkspace("onboarding:manage")],
+  request: {
+    params: z.object({ workspaceId: uuidPathParam("workspaceId"), itemId: uuidPathParam("itemId") }),
+    body: jsonBody(checklistItemUpdateSchema as never),
+  },
+  responses: {
+    200: jsonContent(apiSuccessSchema(jsonValueSchema, "OnboardingItemResponse"), "Updated checklist item"),
+    ...errorResponses(401, 403, 404, 422),
+  },
+});
 
 onboardingRoutes.use(base, requirePrincipal);
 onboardingRoutes.use(`${base}/*`, requirePrincipal);
@@ -51,14 +91,14 @@ export async function refreshProjectStatus(tx: Database, projectId: string): Pro
     .where(eq(onboardingProjects.id, projectId));
 }
 
-onboardingRoutes.get(base, requireWorkspace("cockpit:view"), async (c) => {
+onboardingRoutes.openapi(getOnboardingRoute, async (c) => {
   const workspaceId = parseUuidParam(c, "workspaceId");
   const onboarding = await run(c, tenantContext(c), (tx) => loadOnboarding(tx, workspaceId));
   if (!onboarding) throw new NotFoundError("Onboarding not found");
-  return c.json(ok({ workspaceId, ...onboarding }));
+  return c.json(ok({ workspaceId, ...onboarding }), 200);
 });
 
-onboardingRoutes.patch(`${base}/items/:itemId`, requireWorkspace("onboarding:manage"), async (c) => {
+onboardingRoutes.openapi(updateChecklistItemRoute, async (c) => {
   const workspaceId = parseUuidParam(c, "workspaceId");
   const itemId = parseUuidParam(c, "itemId");
   const { status } = await parseBody(c, checklistItemUpdateSchema);
@@ -96,5 +136,5 @@ onboardingRoutes.patch(`${base}/items/:itemId`, requireWorkspace("onboarding:man
     });
     return updated;
   });
-  return c.json(ok(item));
+  return c.json(ok(item), 200);
 });

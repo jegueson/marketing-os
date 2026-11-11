@@ -12,7 +12,11 @@
     "generate": "node ./scripts/generate.mjs"
   },
   "devDependencies": {
+    "openapi-typescript": "^7.13.0",
     "typescript": "^5.9.2",
     "vitest": "^3.2.4"
+  },
+  "dependencies": {
+    "zod": "^4.6.7"
   }
 }

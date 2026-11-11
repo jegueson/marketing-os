@@ -4,10 +4,10 @@ import type { AppContext } from "../context";
 
 const uuid = z.string().uuid();
 
-export async function parseBody<T>(
+export async function parseBody<S extends z.ZodType>(
   c: AppContext,
-  schema: z.ZodType<T, z.ZodTypeDef, unknown>,
-): Promise<T> {
+  schema: S,
+): Promise<z.infer<S>> {
   const parsed = schema.safeParse(await c.req.json().catch(() => null));
   if (!parsed.success) throw new ValidationError("Invalid request body", parsed.error.flatten());
   return parsed.data;

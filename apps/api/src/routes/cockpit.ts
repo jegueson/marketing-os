@@ -1,14 +1,28 @@
-import { Hono } from "hono";
+import { z } from "@hono/zod-openapi";
 import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { NotFoundError, ok } from "@marketing-os/core";
 import { cockpitViewSchema, type CockpitView, type DataHealthItem } from "@marketing-os/schemas";
 import { connections, connectors, dataHealth, workspaces } from "@marketing-os/db";
 import { requirePrincipal } from "../auth/principal";
 import { requireWorkspace } from "../auth/access";
-import { run, tenantContext, type HonoEnv } from "../context";
+import { run, tenantContext } from "../context";
 import { parseUuidParam } from "../lib/http";
+import { apiSuccessSchema, createRouter, defineRoute, errorResponses, jsonContent, uuidPathParam } from "../lib/openapi";
 
-export const cockpitRoutes = new Hono<HonoEnv>();
+export const cockpitRoutes = createRouter();
+
+const cockpitRoute = defineRoute({
+  method: "get",
+  path: "/api/v1/workspaces/{workspaceId}/cockpit",
+  tags: ["Cockpit"],
+  security: [{ Bearer: [] }],
+  middleware: [requirePrincipal, requireWorkspace("cockpit:view")],
+  request: { params: z.object({ workspaceId: uuidPathParam("workspaceId") }) },
+  responses: {
+    200: jsonContent(apiSuccessSchema(cockpitViewSchema, "CockpitResponse"), "Cockpit view"),
+    ...errorResponses(401, 403, 404, 422),
+  },
+});
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 /** Data older than this shows as stale in the cockpit. */
@@ -24,11 +38,7 @@ function healthOf(status: string | null, freshnessAt: Date | null, now: number):
   return "unknown";
 }
 
-cockpitRoutes.get(
-  "/api/v1/workspaces/:workspaceId/cockpit",
-  requirePrincipal,
-  requireWorkspace("cockpit:view"),
-  async (c) => {
+cockpitRoutes.openapi(cockpitRoute, async (c) => {
     const workspaceId = parseUuidParam(c, "workspaceId");
     const now = Date.now();
     const { workspace, rows } = await run(c, tenantContext(c), async (tx) => {
@@ -101,6 +111,5 @@ cockpitRoutes.get(
           ? { message: "Connect a data source and select accounts to populate the cockpit." }
           : null,
     });
-    return c.json(ok(view));
-  },
-);
+    return c.json(ok(view), 200);
+  });

@@ -6,11 +6,12 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
+    "export-openapi": "pnpm --dir ../.. exec vitest run apps/api/src/openapi.export.test.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run"
   },
   "dependencies": {
-    "@hono/zod-openapi": "^0.19.8",
+    "@hono/zod-openapi": "^1.6.3",
     "@marketing-os/connector-mock": "workspace:*",
     "@marketing-os/connector-sdk": "workspace:*",
     "@marketing-os/core": "workspace:*",

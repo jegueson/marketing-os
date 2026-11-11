@@ -3,7 +3,7 @@ import { assertEventEnvelope, relayReady, type EventEnvelope } from "./outbox";
 
 function event(overrides: Partial<EventEnvelope>): EventEnvelope {
   return {
-    id: "11111111-1111-1111-1111-111111111111",
+    id: "11111111-1111-4111-8111-111111111111",
     type: "integration.connected",
     tenantId: null,
     occurredAt: new Date().toISOString(),
@@ -23,7 +23,7 @@ describe("outbox", () => {
   });
 
   it("accepts tenant events with tenant_id", () => {
-    const tenantId = "22222222-2222-2222-2222-222222222222";
+    const tenantId = "22222222-2222-4222-8222-222222222222";
     expect(assertEventEnvelope(event({ tenantId })).tenantId).toBe(tenantId);
   });
 

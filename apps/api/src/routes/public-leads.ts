@@ -1,14 +1,32 @@
-import { Hono } from "hono";
+import { z } from "@hono/zod-openapi";
 import { and, desc, gt, sql } from "drizzle-orm";
 import { AppError, ValidationError, ok } from "@marketing-os/core";
 import { publicLeadCreateSchema, type PublicLeadCreate } from "@marketing-os/schemas";
 import { leadBriefs, leadSources, leads, type Database } from "@marketing-os/db";
-import { clientIp, run, systemContext, type HonoEnv } from "../context";
+import { clientIp, run, systemContext } from "../context";
 import { enqueueEvent, recordAudit } from "../lib/events";
+import { apiSuccessSchema, createRouter, defineRoute, errorResponses, jsonBody, jsonContent } from "../lib/openapi";
 
 const DEDUPE_WINDOW_MS = 24 * 60 * 60 * 1000;
 
-export const publicLeadsRoutes = new Hono<HonoEnv>();
+export const publicLeadsRoutes = createRouter();
+
+const leadIntakeSchema = apiSuccessSchema(
+  z.object({ id: z.string().uuid(), status: z.string(), duplicate: z.boolean() }),
+  "PublicLeadCreateResponse",
+);
+
+const createPublicLeadRoute = defineRoute({
+  method: "post",
+  path: "/api/v1/public/leads",
+  tags: ["Leads"],
+  request: { body: jsonBody(publicLeadCreateSchema as never) },
+  responses: {
+    201: jsonContent(leadIntakeSchema, "Lead created"),
+    200: jsonContent(leadIntakeSchema, "Duplicate of a lead created in the last 24 hours"),
+    ...errorResponses(400, 422, 429, 503),
+  },
+});
 
 async function findRecentLead(tx: Database, email: string) {
   const since = new Date(Date.now() - DEDUPE_WINDOW_MS);
@@ -59,7 +77,7 @@ async function createLead(tx: Database, input: PublicLeadCreate, requestId: stri
   return lead;
 }
 
-publicLeadsRoutes.post("/api/v1/public/leads", async (c) => {
+publicLeadsRoutes.openapi(createPublicLeadRoute, async (c) => {
   const deps = c.get("deps");
   const ip = clientIp(c);
   if (!(await deps.leadRateLimiter(c.env).allow(`public-leads:${ip ?? "unknown"}`))) {
@@ -86,8 +104,6 @@ publicLeadsRoutes.post("/api/v1/public/leads", async (c) => {
     return { lead: await createLead(tx, parsed.data, c.get("requestId")), duplicate: false };
   });
 
-  return c.json(
-    ok({ id: result.lead.id, status: result.lead.status, duplicate: result.duplicate }),
-    result.duplicate ? 200 : 201,
-  );
+  const payload = ok({ id: result.lead.id, status: result.lead.status, duplicate: result.duplicate });
+  return result.duplicate ? c.json(payload, 200) : c.json(payload, 201);
 });

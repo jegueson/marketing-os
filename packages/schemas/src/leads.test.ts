@@ -46,7 +46,7 @@ describe("cockpitViewSchema", () => {
   it("accepts the Sprint 1 empty shell", () => {
     const view = {
       header: {
-        workspaceId: "11111111-1111-1111-1111-111111111111",
+        workspaceId: "11111111-1111-4111-8111-111111111111",
         workspaceName: "Default",
         period: { from: "2026-10-01", to: "2026-10-31", label: "Last 30 days" },
         freshness: "empty",

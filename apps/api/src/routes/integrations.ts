@@ -1,4 +1,4 @@
-import { Hono } from "hono";
+import { z } from "@hono/zod-openapi";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import {
   ConflictError,
@@ -20,9 +20,19 @@ import {
 } from "@marketing-os/db";
 import { requirePrincipal } from "../auth/principal";
 import { requireWorkspace } from "../auth/access";
-import { run, tenantContext, type AppContext, type HonoEnv } from "../context";
+import { run, tenantContext, type AppContext } from "../context";
 import { enqueueEvent, recordAudit } from "../lib/events";
 import { parseBody, parseUuidParam } from "../lib/http";
+import {
+  apiSuccessSchema,
+  createRouter,
+  defineRoute,
+  errorResponses,
+  jsonBody,
+  jsonContent,
+  jsonValueSchema,
+  uuidPathParam,
+} from "../lib/openapi";
 
 /** Shown in the catalog until a real connector ships behind its `connector.<slug>` flag. */
 const comingSoon = [
@@ -36,7 +46,103 @@ const comingSoon = [
 
 const base = "/api/v1/workspaces/:workspaceId";
 
-export const integrationsRoutes = new Hono<HonoEnv>();
+export const integrationsRoutes = createRouter();
+
+const openApiBase = "/api/v1/workspaces/{workspaceId}";
+const security = [{ Bearer: [] }];
+const workspaceParams = z.object({ workspaceId: uuidPathParam("workspaceId") });
+const connectionParams = z.object({ workspaceId: uuidPathParam("workspaceId"), id: uuidPathParam("id") });
+
+const listIntegrationsRoute = defineRoute({
+  method: "get",
+  path: `${openApiBase}/integrations`,
+  tags: ["Integrations"],
+  security,
+  middleware: [requireWorkspace("integrations:read")],
+  request: { params: workspaceParams },
+  responses: {
+    200: jsonContent(apiSuccessSchema(z.array(jsonValueSchema), "IntegrationCatalogResponse"), "Connector catalog"),
+    ...errorResponses(401, 403, 404, 422),
+  },
+});
+
+const listConnectionsRoute = defineRoute({
+  method: "get",
+  path: `${openApiBase}/connections`,
+  tags: ["Integrations"],
+  security,
+  middleware: [requireWorkspace("integrations:read")],
+  request: { params: workspaceParams },
+  responses: {
+    200: jsonContent(apiSuccessSchema(z.array(jsonValueSchema), "ConnectionListResponse"), "Workspace connections"),
+    ...errorResponses(401, 403, 404, 422),
+  },
+});
+
+const createConnectionRoute = defineRoute({
+  method: "post",
+  path: `${openApiBase}/connections`,
+  tags: ["Integrations"],
+  security,
+  middleware: [requireWorkspace("integrations:manage")],
+  request: { params: workspaceParams, body: jsonBody(connectionCreateSchema as never) },
+  responses: {
+    201: jsonContent(apiSuccessSchema(jsonValueSchema, "ConnectionCreateResponse"), "Connection created"),
+    ...errorResponses(401, 403, 404, 422),
+  },
+});
+
+const listResourcesRoute = defineRoute({
+  method: "get",
+  path: `${openApiBase}/connections/{id}/resources`,
+  tags: ["Integrations"],
+  security,
+  middleware: [requireWorkspace("integrations:read")],
+  request: { params: connectionParams },
+  responses: {
+    200: jsonContent(apiSuccessSchema(z.array(jsonValueSchema), "ConnectionResourcesResponse"), "Resources the connector offers"),
+    ...errorResponses(401, 403, 404, 422),
+  },
+});
+
+const selectScopesRoute = defineRoute({
+  method: "put",
+  path: `${openApiBase}/connections/{id}/scopes`,
+  tags: ["Integrations"],
+  security,
+  middleware: [requireWorkspace("integrations:manage")],
+  request: { params: connectionParams, body: jsonBody(scopeSelectionSchema as never) },
+  responses: {
+    200: jsonContent(apiSuccessSchema(jsonValueSchema, "ConnectionScopesResponse"), "Scopes saved"),
+    ...errorResponses(401, 403, 404, 422),
+  },
+});
+
+const testConnectionRoute = defineRoute({
+  method: "post",
+  path: `${openApiBase}/connections/{id}/test`,
+  tags: ["Integrations"],
+  security,
+  middleware: [requireWorkspace("integrations:manage")],
+  request: { params: connectionParams },
+  responses: {
+    200: jsonContent(apiSuccessSchema(jsonValueSchema, "ConnectionTestResponse"), "Connection healthy"),
+    ...errorResponses(401, 403, 404, 422),
+  },
+});
+
+const deleteConnectionRoute = defineRoute({
+  method: "delete",
+  path: `${openApiBase}/connections/{id}`,
+  tags: ["Integrations"],
+  security,
+  middleware: [requireWorkspace("integrations:manage")],
+  request: { params: connectionParams },
+  responses: {
+    200: jsonContent(apiSuccessSchema(jsonValueSchema, "ConnectionDeleteResponse"), "Connection removed"),
+    ...errorResponses(401, 403, 404, 409, 422),
+  },
+});
 
 integrationsRoutes.use(`${base}/integrations`, requirePrincipal);
 integrationsRoutes.use(`${base}/connections`, requirePrincipal);
@@ -94,7 +200,7 @@ function auditBase(c: AppContext) {
   };
 }
 
-integrationsRoutes.get(`${base}/integrations`, requireWorkspace("integrations:read"), async (c) => {
+integrationsRoutes.openapi(listIntegrationsRoute, async (c) => {
   const { rows, flags } = await run(c, tenantContext(c), async (tx) => ({
     rows: await tx.select().from(connectors).where(eq(connectors.status, "active")),
     flags: await tx.select({ key: featureFlags.key, isEnabled: featureFlags.isEnabled }).from(featureFlags),
@@ -110,10 +216,10 @@ integrationsRoutes.get(`${base}/integrations`, requireWorkspace("integrations:re
       ...entry,
       status: flagged.get(`connector.${entry.slug}`) ? ("beta" as const) : ("coming_soon" as const),
     }));
-  return c.json(ok([...available, ...upcoming]));
+  return c.json(ok([...available, ...upcoming]), 200);
 });
 
-integrationsRoutes.get(`${base}/connections`, requireWorkspace("integrations:read"), async (c) => {
+integrationsRoutes.openapi(listConnectionsRoute, async (c) => {
   const workspaceId = parseUuidParam(c, "workspaceId");
   const items = await run(c, tenantContext(c), (tx) =>
     tx
@@ -130,10 +236,10 @@ integrationsRoutes.get(`${base}/connections`, requireWorkspace("integrations:rea
       .innerJoin(connectors, eq(connectors.id, connections.connectorId))
       .where(and(eq(connections.workspaceId, workspaceId), isNull(connections.deletedAt))),
   );
-  return c.json(ok(items));
+  return c.json(ok(items), 200);
 });
 
-integrationsRoutes.post(`${base}/connections`, requireWorkspace("integrations:manage"), async (c) => {
+integrationsRoutes.openapi(createConnectionRoute, async (c) => {
   const workspaceId = parseUuidParam(c, "workspaceId");
   const input = await parseBody(c, connectionCreateSchema);
   connectorFor(c, input.connectorSlug);
@@ -166,10 +272,7 @@ integrationsRoutes.post(`${base}/connections`, requireWorkspace("integrations:ma
   return c.json(ok({ ...created, connector: input.connectorSlug, scopes: 0 }), 201);
 });
 
-integrationsRoutes.get(
-  `${base}/connections/:id/resources`,
-  requireWorkspace("integrations:read"),
-  async (c) => {
+integrationsRoutes.openapi(listResourcesRoute, async (c) => {
     const workspaceId = parseUuidParam(c, "workspaceId");
     const id = parseUuidParam(c, "id");
     const { connection, selected } = await run(c, tenantContext(c), async (tx) => ({
@@ -190,14 +293,12 @@ integrationsRoutes.get(
           selected: chosen.has(`${r.kind}:${r.name}`),
         })),
       ),
+      200,
     );
   },
 );
 
-integrationsRoutes.put(
-  `${base}/connections/:id/scopes`,
-  requireWorkspace("integrations:manage"),
-  async (c) => {
+integrationsRoutes.openapi(selectScopesRoute, async (c) => {
     const workspaceId = parseUuidParam(c, "workspaceId");
     const id = parseUuidParam(c, "id");
     const input = await parseBody(c, scopeSelectionSchema);
@@ -236,18 +337,14 @@ integrationsRoutes.put(
       });
       return { connectionId: id, scopes: input.resources.length };
     });
-    return c.json(ok(result));
-  },
-);
+    return c.json(ok(result), 200);
+  });
 
 type TestOutcome =
   | { healthy: true; checkedAt: string }
   | { healthy: false; code: "no_scopes_selected" | "connector_unhealthy" | "connector_error"; message: string };
 
-integrationsRoutes.post(
-  `${base}/connections/:id/test`,
-  requireWorkspace("integrations:manage"),
-  async (c) => {
+integrationsRoutes.openapi(testConnectionRoute, async (c) => {
     const workspaceId = parseUuidParam(c, "workspaceId");
     const id = parseUuidParam(c, "id");
     const outcome = await run(c, tenantContext(c), async (tx): Promise<TestOutcome> => {
@@ -294,9 +391,8 @@ integrationsRoutes.post(
     if (!outcome.healthy) {
       return c.json(fail(outcome.code, outcome.message), 422);
     }
-    return c.json(ok({ connectionId: id, ...outcome }));
-  },
-);
+    return c.json(ok({ connectionId: id, ...outcome }), 200);
+  });
 
 async function recordConnectionHealth(
   tx: Database,
@@ -339,10 +435,7 @@ async function recordConnectionHealth(
   });
 }
 
-integrationsRoutes.delete(
-  `${base}/connections/:id`,
-  requireWorkspace("integrations:manage"),
-  async (c) => {
+integrationsRoutes.openapi(deleteConnectionRoute, async (c) => {
     const workspaceId = parseUuidParam(c, "workspaceId");
     const id = parseUuidParam(c, "id");
     await run(c, tenantContext(c), async (tx) => {
@@ -361,6 +454,5 @@ integrationsRoutes.delete(
         resourceId: id,
       });
     });
-    return c.json(ok({ connectionId: id, deleted: true }));
-  },
-);
+    return c.json(ok({ connectionId: id, deleted: true as const }), 200);
+  });

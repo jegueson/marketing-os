@@ -14,6 +14,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@marketing-os/api-client": "workspace:*",
     "@marketing-os/core": "workspace:*",
     "@marketing-os/schemas": "workspace:*",
     "@marketing-os/ui": "workspace:*",

@@ -1,6 +1,5 @@
-import { Hono } from "hono";
 import { and, asc, count, desc, eq, ilike, or, sql, type SQL } from "drizzle-orm";
-import { z } from "zod";
+import { z } from "@hono/zod-openapi";
 import {
   ConflictError,
   NotFoundError,
@@ -24,13 +23,23 @@ import {
   type Database,
 } from "@marketing-os/db";
 import { requirePrincipal, requireStaff } from "../auth/principal";
-import { run, staffContext, type AppContext, type HonoEnv, type StaffRole } from "../context";
+import { run, staffContext, type AppContext, type StaffRole } from "../context";
 import { recordAudit } from "../lib/events";
 import { parseBody, parseUuidParam } from "../lib/http";
+import {
+  apiSuccessSchema,
+  createRouter,
+  defineRoute,
+  errorResponses,
+  jsonBody,
+  jsonContent,
+  jsonValueSchema,
+  uuidPathParam,
+} from "../lib/openapi";
 import { provisionFromLead } from "../services/provisioning";
 import { sendInvitationEmail } from "../services/invitations";
 
-export const leadsRoutes = new Hono<HonoEnv>();
+export const leadsRoutes = createRouter();
 
 leadsRoutes.use("/api/v1/leads", requirePrincipal);
 leadsRoutes.use("/api/v1/leads/*", requirePrincipal);
@@ -40,6 +49,87 @@ const listQuery = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(20),
   status: leadStatusSchema.optional(),
   q: z.string().trim().max(200).optional(),
+});
+
+const idParams = z.object({ id: uuidPathParam("id") });
+const leadSecurity = [{ Bearer: [] }];
+
+const listLeadsRoute = defineRoute({
+  method: "get",
+  path: "/api/v1/leads",
+  tags: ["Leads"],
+  security: leadSecurity,
+  middleware: [requireStaff("leads:read")],
+  request: { query: listQuery },
+  responses: {
+    200: jsonContent(apiSuccessSchema(z.array(jsonValueSchema), "LeadListResponse"), "Paginated leads"),
+    ...errorResponses(401, 403, 422),
+  },
+});
+
+const getLeadRoute = defineRoute({
+  method: "get",
+  path: "/api/v1/leads/{id}",
+  tags: ["Leads"],
+  security: leadSecurity,
+  middleware: [requireStaff("leads:read")],
+  request: { params: idParams },
+  responses: {
+    200: jsonContent(apiSuccessSchema(jsonValueSchema, "LeadDetailResponse"), "Lead with briefs, sources, notes"),
+    ...errorResponses(401, 403, 404, 422),
+  },
+});
+
+const updateLeadStatusRoute = defineRoute({
+  method: "patch",
+  path: "/api/v1/leads/{id}/status",
+  tags: ["Leads"],
+  security: leadSecurity,
+  middleware: [requireStaff("leads:write")],
+  request: { params: idParams, body: jsonBody(leadStatusUpdateSchema as never) },
+  responses: {
+    200: jsonContent(apiSuccessSchema(jsonValueSchema, "LeadStatusResponse"), "Updated lead"),
+    ...errorResponses(401, 403, 404, 409, 422),
+  },
+});
+
+const addLeadNoteRoute = defineRoute({
+  method: "post",
+  path: "/api/v1/leads/{id}/notes",
+  tags: ["Leads"],
+  security: leadSecurity,
+  middleware: [requireStaff("leads:write")],
+  request: { params: idParams, body: jsonBody(leadNoteCreateSchema as never) },
+  responses: {
+    201: jsonContent(apiSuccessSchema(jsonValueSchema, "LeadNoteResponse"), "Note created"),
+    ...errorResponses(401, 403, 404, 422),
+  },
+});
+
+const upsertOpportunityRoute = defineRoute({
+  method: "put",
+  path: "/api/v1/leads/{id}/opportunity",
+  tags: ["Leads"],
+  security: leadSecurity,
+  middleware: [requireStaff("leads:write")],
+  request: { params: idParams, body: jsonBody(opportunityUpsertSchema as never) },
+  responses: {
+    200: jsonContent(apiSuccessSchema(jsonValueSchema, "LeadOpportunityResponse"), "Saved opportunity"),
+    ...errorResponses(401, 403, 404, 422),
+  },
+});
+
+const convertLeadRoute = defineRoute({
+  method: "post",
+  path: "/api/v1/leads/{id}/convert",
+  tags: ["Leads"],
+  security: leadSecurity,
+  middleware: [requireStaff("tenants:provision")],
+  request: { params: idParams },
+  responses: {
+    201: jsonContent(apiSuccessSchema(jsonValueSchema, "LeadConvertResponse"), "Tenant provisioned"),
+    ...errorResponses(401, 403, 404, 409, 422),
+  },
 });
 
 const parseLeadId = (c: AppContext) => parseUuidParam(c, "id");
@@ -59,7 +149,7 @@ async function loadLead(tx: Database, id: string) {
   return lead;
 }
 
-leadsRoutes.get("/api/v1/leads", requireStaff("leads:read"), async (c) => {
+leadsRoutes.openapi(listLeadsRoute, async (c) => {
   const query = listQuery.safeParse(c.req.query());
   if (!query.success) throw new ValidationError("Invalid query", query.error.flatten());
   const { page, limit, status, q } = query.data;
@@ -92,10 +182,10 @@ leadsRoutes.get("/api/v1/leads", requireStaff("leads:read"), async (c) => {
     const [counted] = await tx.select({ total: count() }).from(leads).where(where);
     return { items, total: counted?.total ?? 0 };
   });
-  return c.json(ok(items, { total, page, limit }));
+  return c.json(ok(items, { total, page, limit }), 200);
 });
 
-leadsRoutes.get("/api/v1/leads/:id", requireStaff("leads:read"), async (c) => {
+leadsRoutes.openapi(getLeadRoute, async (c) => {
   const id = parseLeadId(c);
   const detail = await run(c, staffContext(c.get("principal")), async (tx) => {
     const lead = await loadLead(tx, id);
@@ -112,10 +202,10 @@ leadsRoutes.get("/api/v1/leads/:id", requireStaff("leads:read"), async (c) => {
     ]);
     return { lead, briefs, sources, notes, opportunity: opportunity ?? null, statusHistory: history };
   });
-  return c.json(ok(detail));
+  return c.json(ok(detail), 200);
 });
 
-leadsRoutes.patch("/api/v1/leads/:id/status", requireStaff("leads:write"), async (c) => {
+leadsRoutes.openapi(updateLeadStatusRoute, async (c) => {
   const id = parseLeadId(c);
   const { status: next } = await parseBody(c, leadStatusUpdateSchema);
   if (next === "converted") {
@@ -144,10 +234,10 @@ leadsRoutes.patch("/api/v1/leads/:id/status", requireStaff("leads:write"), async
     });
     return updated;
   });
-  return c.json(ok(lead));
+  return c.json(ok(lead), 200);
 });
 
-leadsRoutes.post("/api/v1/leads/:id/notes", requireStaff("leads:write"), async (c) => {
+leadsRoutes.openapi(addLeadNoteRoute, async (c) => {
   const id = parseLeadId(c);
   const input = await parseBody(c, leadNoteCreateSchema);
   const actor = actorOf(c);
@@ -170,7 +260,7 @@ leadsRoutes.post("/api/v1/leads/:id/notes", requireStaff("leads:write"), async (
   return c.json(ok(note), 201);
 });
 
-leadsRoutes.put("/api/v1/leads/:id/opportunity", requireStaff("leads:write"), async (c) => {
+leadsRoutes.openapi(upsertOpportunityRoute, async (c) => {
   const id = parseLeadId(c);
   const input = await parseBody(c, opportunityUpsertSchema);
   const actor = actorOf(c);
@@ -198,10 +288,10 @@ leadsRoutes.put("/api/v1/leads/:id/opportunity", requireStaff("leads:write"), as
     });
     return saved;
   });
-  return c.json(ok(opportunity));
+  return c.json(ok(opportunity), 200);
 });
 
-leadsRoutes.post("/api/v1/leads/:id/convert", requireStaff("tenants:provision"), async (c) => {
+leadsRoutes.openapi(convertLeadRoute, async (c) => {
   const id = parseLeadId(c);
   const deps = c.get("deps");
   const result = await run(c, staffContext(c.get("principal")), (tx) =>

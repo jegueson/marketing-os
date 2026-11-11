@@ -17,7 +17,7 @@ export const eventEnvelopeSchema = z.object({
   type: z.string().min(1),
   tenantId: z.string().uuid().nullable(),
   occurredAt: z.string().datetime(),
-  payload: z.record(z.unknown()),
+  payload: z.record(z.string(), z.unknown()),
   idempotencyKey: z.string().min(1),
 });
 

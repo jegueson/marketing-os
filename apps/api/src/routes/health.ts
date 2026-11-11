@@ -1,15 +1,45 @@
-import { Hono } from "hono";
+import { z } from "@hono/zod-openapi";
 import { sql } from "drizzle-orm";
 import { fail, formatLogLine, ok } from "@marketing-os/core";
 import { ConfigError, loadEnv, type AppEnv } from "../env";
-import type { HonoEnv } from "../context";
+import { apiSuccessSchema, createRouter, defineRoute, errorResponses, jsonContent } from "../lib/openapi";
 
-export const healthRoutes = new Hono<HonoEnv>();
+export const healthRoutes = createRouter();
 
-healthRoutes.get("/healthz", (c) => c.json(ok({ status: "ok" })));
+const healthzRoute = defineRoute({
+  method: "get",
+  path: "/healthz",
+  tags: ["Health"],
+  responses: {
+    200: jsonContent(apiSuccessSchema(z.object({ status: z.literal("ok") }), "HealthzResponse"), "Process is up"),
+  },
+});
+
+const readyzRoute = defineRoute({
+  method: "get",
+  path: "/readyz",
+  tags: ["Health"],
+  responses: {
+    200: jsonContent(
+      apiSuccessSchema(
+        z.object({
+          status: z.literal("ready"),
+          database: z.literal("ok"),
+          mode: z.string(),
+          captcha: z.enum(["configured", "missing"]),
+        }),
+        "ReadyzResponse",
+      ),
+      "Config valid and database reachable",
+    ),
+    ...errorResponses(503),
+  },
+});
+
+healthRoutes.openapi(healthzRoute, (c) => c.json(ok({ status: "ok" as const }), 200));
 
 /** Ready only when config validates and the database answers. */
-healthRoutes.get("/readyz", async (c) => {
+healthRoutes.openapi(readyzRoute, async (c) => {
   let config: AppEnv;
   try {
     config = loadEnv(c.env);
@@ -35,10 +65,11 @@ healthRoutes.get("/readyz", async (c) => {
   }
   return c.json(
     ok({
-      status: "ready",
-      database: "ok",
+      status: "ready" as const,
+      database: "ok" as const,
       mode: config.deploymentMode,
-      captcha: config.turnstileSecret ? "configured" : "missing",
+      captcha: config.turnstileSecret ? ("configured" as const) : ("missing" as const),
     }),
+    200,
   );
 });

@@ -22,5 +22,6 @@ Decisions for Marketing OS. Format follows Michael Nygard's lightweight ADR. Sta
 | [0016](0016-agpl-open-core.md) | AGPL-3.0 open core | accepted |
 | [0017](0017-openrouter-first-gateway.md) | OpenRouter-first model gateway | accepted |
 | [0018](0018-deployment-modes.md) | Two deployment modes and two self-host targets | accepted |
+| [0019](0019-openapi-client.md) | OpenAPI as the API contract and generated client | accepted |
 
 Template for new records: [template.md](template.md).
