@@ -27,6 +27,7 @@ const MOCK_METRICS: Record<string, { perDay: number; unit: string }> = {
   conversions: { perDay: 12, unit: "count" },
   leads: { perDay: 4, unit: "count" },
   qualified_leads: { perDay: 1, unit: "count" },
+  key_events: { perDay: 3, unit: "count" },
 };
 
 /** Platform catalog keys. Short names stay so older callers and the contract kit still work. */
@@ -35,8 +36,10 @@ const MOCK_METRIC_ALIASES: Record<string, string> = {
   "mock.sessions": "sessions",
   "mock.leads": "leads",
   "mock.qualified_leads": "qualified_leads",
-  "mock.impressions": "impressions",
-  "mock.conversions": "conversions",
+  "ga4.key_events": "key_events",
+  "google_ads.conversions": "conversions",
+  "hubspot.deals_qualified": "qualified_leads",
+  "hubspot.contacts_created": "leads",
 };
 
 export class MockConnector implements Connector {

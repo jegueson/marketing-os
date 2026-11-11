@@ -66,6 +66,23 @@ describe("mos setup", () => {
     );
     expect(rows).toEqual([{ slug: "local", workspace: "default", role: "customer_admin", email: "admin@example.com" }]);
     expect([...auth.staffRoles.values()]).toEqual(["platform_admin"]);
+    const { rows: kpis } = await testDb.pg.query<{ key: string; target: string | null }>(
+      `select key, target::text from metric_definitions
+        where tenant_id is null and key in ('Spend','Sessions','KeyEvents','AdsConversions','Leads','LeadCAC','QualifiedLeadCAC','CostPerSession')
+        order by key`,
+    );
+    expect(kpis.map((row) => row.key)).toEqual([
+      "AdsConversions",
+      "CostPerSession",
+      "KeyEvents",
+      "LeadCAC",
+      "Leads",
+      "QualifiedLeadCAC",
+      "Sessions",
+      "Spend",
+    ]);
+    expect(kpis.find((row) => row.key === "LeadCAC")?.target).toBe("40.000000");
+    expect(kpis.find((row) => row.key === "Spend")?.target).toBeNull();
     const { rows: audit } = await testDb.pg.query("select 1 from audit_events where event_type = 'setup.completed'");
     expect(audit).toHaveLength(1);
   });
@@ -78,6 +95,10 @@ describe("mos setup", () => {
       "select (select count(*)::int from tenants) + (select count(*)::int from workspaces) + (select count(*)::int from tenant_memberships) as n",
     );
     expect(rows[0]?.n).toBe(3);
+    const { rows: catalog } = await testDb.pg.query<{ n: number }>(
+      "select count(*)::int as n from metric_definitions where tenant_id is null",
+    );
+    expect(catalog[0]?.n).toBeGreaterThanOrEqual(8);
   });
 
   it("stores the model key with AES-GCM and never prints it", async () => {

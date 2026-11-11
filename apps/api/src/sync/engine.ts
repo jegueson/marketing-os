@@ -16,7 +16,15 @@ import {
 import { systemContext } from "../context";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-const MOCK_METRICS = ["mock.spend", "mock.sessions", "mock.leads", "mock.qualified_leads"] as const;
+const MOCK_METRICS = [
+  "mock.spend",
+  "mock.sessions",
+  "mock.leads",
+  "mock.qualified_leads",
+  "ga4.key_events",
+  "google_ads.conversions",
+  "hubspot.deals_qualified",
+] as const;
 
 export type SyncMessage = {
   runId: number;

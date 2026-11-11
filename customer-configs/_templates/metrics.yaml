@@ -55,6 +55,7 @@ definitions:
     version: "1"
     label: Spend
     unit: currency
+    widgets: [executive, performance]
     formula:
       op: sum
       metric: mock.spend
@@ -63,6 +64,7 @@ definitions:
     version: "1"
     label: Sessions
     unit: count
+    widgets: [performance]
     formula:
       op: sum
       metric: mock.sessions
@@ -71,6 +73,7 @@ definitions:
     version: "1"
     label: Key events
     unit: count
+    widgets: [funnel]
     formula:
       op: sum
       metric: ga4.key_events
@@ -79,6 +82,7 @@ definitions:
     version: "1"
     label: Ads conversions
     unit: count
+    widgets: [funnel]
     formula:
       op: sum
       metric: google_ads.conversions
@@ -87,6 +91,7 @@ definitions:
     version: "1"
     label: Leads
     unit: count
+    widgets: [leads]
     formula:
       op: sum
       metric: mock.leads
@@ -95,6 +100,7 @@ definitions:
     version: "1"
     label: Qualified leads
     unit: count
+    widgets: [leads]
     formula:
       op: sum
       metric: hubspot.deals_qualified
@@ -103,6 +109,8 @@ definitions:
     version: "1"
     label: Lead CAC
     unit: currency
+    widgets: [leads, executive]
+    target: 40
     formula:
       op: ratio
       numerator: Spend
@@ -112,6 +120,8 @@ definitions:
     version: "1"
     label: Qualified lead CAC
     unit: currency
+    widgets: [leads, executive]
+    target: 120
     formula:
       op: ratio
       numerator: Spend
@@ -121,6 +131,7 @@ definitions:
     version: "1"
     label: Cost per session
     unit: currency
+    widgets: [performance]
     formula:
       op: ratio
       numerator: Spend

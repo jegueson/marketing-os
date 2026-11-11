@@ -47,6 +47,9 @@ importers:
       '@marketing-os/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@marketing-os/metrics':
+        specifier: workspace:*
+        version: link:../../packages/metrics
       '@marketing-os/schemas':
         specifier: workspace:*
         version: link:../../packages/schemas
@@ -90,6 +93,9 @@ importers:
       '@marketing-os/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@marketing-os/metrics':
+        specifier: workspace:*
+        version: link:../../packages/metrics
       drizzle-orm:
         specifier: ^0.44.7
         version: 0.44.7(@cloudflare/workers-types@4.20260702.1)(@electric-sql/pglite@0.5.15)(postgres@3.4.9)
@@ -293,6 +299,9 @@ importers:
         specifier: ^4.6.7
         version: 4.6.7
     devDependencies:
+      '@types/node':
+        specifier: ^26.6.6
+        version: 26.6.6
       typescript:
         specifier: ^5.9.2
         version: 5.9.3

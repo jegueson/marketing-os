@@ -8,6 +8,25 @@ import { useApi, View } from "@/components/api-view";
 import { PortalFrame } from "@/components/workspace";
 import type { Membership } from "@/lib/workspace";
 
+function KpiTable({ cards }: { cards: CockpitView["widgets"]["executive"] }) {
+  if (cards.length === 0) return <p>No KPIs for this view yet.</p>;
+  return (
+    <Table
+      headers={["KPI", "Value", "Previous", "Target", "Delta", "Source", "Freshness", "Definition"]}
+      rows={cards.map((card) => [
+        card.label,
+        card.value == null ? "—" : String(card.value),
+        card.previous == null ? "—" : String(card.previous),
+        card.target == null ? "—" : String(card.target),
+        card.delta == null ? "—" : String(card.delta),
+        card.source,
+        card.freshness,
+        card.definitionVersion ?? "—",
+      ])}
+    />
+  );
+}
+
 function Cockpit({ auth, ws }: { auth: ReadyAuth; ws: Membership }) {
   const [state] = useApi<CockpitView>(auth.api, `/api/v1/workspaces/${ws.workspaceId}/cockpit`);
   return (
@@ -23,20 +42,22 @@ function Cockpit({ auth, ws }: { auth: ReadyAuth; ws: Membership }) {
               <Link href={`/portal/integrations?ws=${ws.workspaceId}`}>Connect a data source</Link>
             </>
           ) : null}
-          <h2>Performance</h2>
-          {view.metrics.length === 0 ? (
-            <p>KPI cards arrive with the first real connectors.</p>
-          ) : (
-            <Table
-              headers={["Metric", "Value", "Definition", "Fetched"]}
-              rows={view.metrics.map((metric) => [
-                metric.key,
-                metric.value,
-                metric.definitionVersion,
-                new Date(metric.fetchedAt).toLocaleString(),
-              ])}
-            />
-          )}
+          <section>
+            <h2>Executive</h2>
+            <KpiTable cards={view.widgets.executive} />
+          </section>
+          <section>
+            <h2>Performance</h2>
+            <KpiTable cards={view.widgets.performance} />
+          </section>
+          <section>
+            <h2>Funnel</h2>
+            <KpiTable cards={view.widgets.funnel} />
+          </section>
+          <section>
+            <h2>Leads</h2>
+            <KpiTable cards={view.widgets.leads} />
+          </section>
           <h2>Data health</h2>
           {view.data_health.length === 0 ? (
             <p>No sources connected.</p>

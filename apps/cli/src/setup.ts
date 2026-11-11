@@ -1,10 +1,12 @@
 import { createHash } from "node:crypto";
 import { chmod, mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { z } from "zod";
 import { encryptSecret, importMasterKey, isDeploymentMode } from "@marketing-os/core";
 import type { Database } from "@marketing-os/db";
 import type { AuthAdmin } from "./auth-admin";
+import { seedPlatformMetrics } from "./metrics-seed";
 import { provisionInstall } from "./install";
 
 const DATA_KEY_VERSION = 1;
@@ -84,6 +86,10 @@ export async function runSetup(cwd: string, raw: SetupInput, deps: SetupDeps): P
     tenantName: input.tenantName,
     tenantSlug: input.tenantSlug,
   });
+  await seedPlatformMetrics(
+    deps.db,
+    fileURLToPath(new URL("../../../customer-configs/_templates/metrics.yaml", import.meta.url)),
+  );
 
   const dir = path.join(cwd, ".mos");
   const configPath = path.join(dir, "setup.json");

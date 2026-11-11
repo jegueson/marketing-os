@@ -16,6 +16,7 @@
     "@marketing-os/connector-sdk": "workspace:*",
     "@marketing-os/core": "workspace:*",
     "@marketing-os/db": "workspace:*",
+    "@marketing-os/metrics": "workspace:*",
     "@marketing-os/schemas": "workspace:*",
     "drizzle-orm": "^0.44.7",
     "hono": "^4.9.8",

@@ -2732,21 +2732,37 @@ export interface components {
                 /** @enum {string} */
                 freshness: "empty" | "live" | "stale";
             };
-            kpi_cards: Record<string, never>[];
-            attention_queue: Record<string, never>[];
-            recommendations: Record<string, never>[];
-            metrics: components["schemas"]["CockpitMetric"][];
+            widgets: {
+                executive: components["schemas"]["KpiCard"][];
+                performance: components["schemas"]["KpiCard"][];
+                funnel: components["schemas"]["KpiCard"][];
+                leads: components["schemas"]["KpiCard"][];
+            };
+            attention_queue: {
+                id: string;
+                message: string;
+            }[];
+            recommendations: {
+                id: string;
+                message: string;
+            }[];
             data_health: components["schemas"]["DataHealthItem"][];
             empty_state: {
                 message: string;
             } | null;
         };
-        CockpitMetric: {
+        KpiCard: {
             key: string;
-            value: string;
-            definitionVersion: string;
+            label: string;
+            value: number | null;
+            previous: number | null;
+            target: number | null;
+            delta: number | null;
             source: string;
-            fetchedAt: string;
+            /** @enum {string} */
+            freshness: "live" | "stale" | "empty" | "error";
+            definitionVersion: string | null;
+            widgets: ("executive" | "performance" | "funnel" | "leads")[];
         };
         DataHealthItem: {
             /** Format: uuid */

@@ -27,6 +27,8 @@ export const metricDefinitions = pgTable(
     label: text("label").notNull(),
     unit: text("unit"),
     formula: jsonb("formula"),
+    target: numeric("target", { precision: 20, scale: 6 }),
+    widgets: text("widgets").array().notNull().default(sql`'{}'`),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },

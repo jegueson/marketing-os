@@ -33,8 +33,7 @@ export const invitationAcceptSchema = z
   })
   .openapi("InvitationAccept");
 
-/** `z.never()` is not representable in OpenAPI, so document the always-empty arrays as object lists. */
-const NEVER_ITEM = z.never().openapi({ type: "object" });
+/** `z.never()` is not used: empty queues are empty arrays of notes. */
 
 export const dataHealthItemSchema = z
   .object({
@@ -49,15 +48,22 @@ export const dataHealthItemSchema = z
   })
   .openapi("DataHealthItem");
 
-export const cockpitMetricSchema = z
+export const kpiCardSchema = z
   .object({
     key: z.string(),
-    value: z.string(),
-    definitionVersion: z.string(),
+    label: z.string(),
+    value: z.number().nullable(),
+    previous: z.number().nullable(),
+    target: z.number().nullable(),
+    delta: z.number().nullable(),
     source: z.string(),
-    fetchedAt: z.string(),
+    freshness: z.enum(["live", "stale", "empty", "error"]),
+    definitionVersion: z.string().nullable(),
+    widgets: z.array(z.enum(["executive", "performance", "funnel", "leads"])),
   })
-  .openapi("CockpitMetric");
+  .openapi("KpiCard");
+
+const cockpitNoteSchema = z.object({ id: z.string(), message: z.string() });
 
 export const cockpitViewSchema = z
   .object({
@@ -67,11 +73,14 @@ export const cockpitViewSchema = z
       period: z.object({ from: z.string(), to: z.string(), label: z.string() }),
       freshness: z.enum(["empty", "live", "stale"]),
     }),
-    // Empty until Sprint 2 widgets land; z.never() keeps the array empty at runtime.
-    kpi_cards: z.array(NEVER_ITEM),
-    attention_queue: z.array(NEVER_ITEM),
-    recommendations: z.array(NEVER_ITEM),
-    metrics: z.array(cockpitMetricSchema),
+    widgets: z.object({
+      executive: z.array(kpiCardSchema),
+      performance: z.array(kpiCardSchema),
+      funnel: z.array(kpiCardSchema),
+      leads: z.array(kpiCardSchema),
+    }),
+    attention_queue: z.array(cockpitNoteSchema),
+    recommendations: z.array(cockpitNoteSchema),
     data_health: z.array(dataHealthItemSchema),
     empty_state: z.object({ message: z.string() }).nullable(),
   })

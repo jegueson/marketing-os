@@ -51,10 +51,9 @@ describe("cockpitViewSchema", () => {
         period: { from: "2026-10-01", to: "2026-10-31", label: "Last 30 days" },
         freshness: "empty",
       },
-      kpi_cards: [],
+      widgets: { executive: [], performance: [], funnel: [], leads: [] },
       attention_queue: [],
       recommendations: [],
-      metrics: [],
       data_health: [],
       empty_state: { message: "Connect a data source" },
     };

@@ -13,6 +13,7 @@
   "dependencies": {
     "@marketing-os/core": "workspace:*",
     "@marketing-os/db": "workspace:*",
+    "@marketing-os/metrics": "workspace:*",
     "drizzle-orm": "^0.44.7",
     "zod": "^4.6.7"
   },

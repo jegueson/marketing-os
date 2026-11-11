@@ -20,6 +20,19 @@ export const formulaSchema = z.discriminatedUnion("op", [
 
 export type Formula = z.infer<typeof formulaSchema>;
 
+export const kpiWidgets = ["executive", "performance", "funnel", "leads"] as const;
+
+export const platformKpiKeys = [
+  "Spend",
+  "Sessions",
+  "KeyEvents",
+  "AdsConversions",
+  "Leads",
+  "LeadCAC",
+  "QualifiedLeadCAC",
+  "CostPerSession",
+] as const;
+
 export const metricDefinitionSchema = z.object({
   key: z.string().min(1),
   source: z.string().min(1),
@@ -27,6 +40,9 @@ export const metricDefinitionSchema = z.object({
   label: z.string().min(1),
   unit: z.string().min(1).optional(),
   formula: formulaSchema.optional(),
+  /** Optional target. Absent means the cockpit shows no target. */
+  target: z.number().finite().optional(),
+  widgets: z.array(z.enum(kpiWidgets)).max(4).optional(),
 });
 
 export type MetricDefinition = z.infer<typeof metricDefinitionSchema>;
@@ -115,8 +131,8 @@ export function evaluateExpression(
   return lookup(vars, formula.metric);
 }
 
-/** Evaluate formula definitions from source inputs. Source keys must already be numbers. */
-export function evaluateCatalog(
+/** Evaluate formula definitions from source inputs. Missing inputs are left out. */
+export function evaluateAvailable(
   definitions: MetricDefinition[],
   inputs: Record<string, number>,
 ): Record<string, number> {
@@ -135,7 +151,18 @@ export function evaluateCatalog(
     }
     if (!progressed) break;
   }
-  const missing = pending.filter((definition) => values[definition.key] === undefined).map((definition) => definition.key);
+  return values;
+}
+
+/** Evaluate formula definitions from source inputs. Source keys must already be numbers. */
+export function evaluateCatalog(
+  definitions: MetricDefinition[],
+  inputs: Record<string, number>,
+): Record<string, number> {
+  const values = evaluateAvailable(definitions, inputs);
+  const missing = definitions
+    .filter((definition) => definition.formula && values[definition.key] === undefined)
+    .map((definition) => definition.key);
   if (missing.length) throw new Error(`Unresolved metrics: ${missing.join(", ")}`);
   return values;
 }

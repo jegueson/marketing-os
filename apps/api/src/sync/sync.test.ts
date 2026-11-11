@@ -1,7 +1,10 @@
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { MockConnector } from "@marketing-os/connector-mock";
 import { ConnectorError, type ConnectorContext, type MetricQuery, type MetricResult } from "@marketing-os/connector-sdk";
-import { metricValues, dataHealth, withContext } from "@marketing-os/db";
+import { loadMetricsYaml } from "@marketing-os/metrics";
+import { metricValues, dataHealth, metricDefinitions, withContext } from "@marketing-os/db";
 import { eq } from "drizzle-orm";
 import { createHarness, provisionCustomer, type Harness, type ProvisionedCustomer, type TestUser } from "../testing/harness";
 import { consumeSyncMessage, enqueueDueSyncs, type SyncMessage } from "./engine";
@@ -75,7 +78,7 @@ describe("sync engine", () => {
     expect(await consumeSyncMessage(h.testDb.db, mine[0]!, connectors)).toBe("ack");
     expect(await consumeSyncMessage(h.testDb.db, mine[0]!, connectors)).toBe("ack");
     const values = await h.testDb.db.select().from(metricValues).where(eq(metricValues.connectionId, id));
-    expect(values.length).toBe(4);
+    expect(values.length).toBe(7);
     expect(values.every((row) => row.definitionVersion === "1")).toBe(true);
     const health = await h.testDb.db.select().from(dataHealth).where(eq(dataHealth.connectionId, id));
     expect(health[0]?.status).toBe("healthy");
@@ -106,16 +109,42 @@ describe("sync engine", () => {
       (tx) => tx.select().from(dataHealth),
     );
     expect(hidden).toEqual([]);
-    const metricsView = await h.call<{ metrics: { key: string; definitionVersion: string }[] }>(`${base}/cockpit`, {
-      token: acme.admin.token,
-    });
+    const catalog = loadMetricsYaml(
+      join(dirname(fileURLToPath(import.meta.url)), "../../../../customer-configs/_templates/metrics.yaml"),
+    );
+    await h.testDb.db.insert(metricDefinitions).values(
+      catalog.definitions.map((definition) => ({
+        key: definition.key,
+        source: definition.source,
+        version: definition.version,
+        label: definition.label,
+        unit: definition.unit ?? null,
+        formula: definition.formula ?? null,
+        target: definition.target == null ? null : String(definition.target),
+        widgets: definition.widgets ?? [],
+      })),
+    );
+    const metricsView = await h.call<{
+      widgets: { executive: { key: string; definitionVersion: string | null }[]; performance: { key: string }[]; funnel: { key: string }[]; leads: { key: string }[] };
+    }>(`${base}/cockpit`, { token: acme.admin.token });
     expect(metricsView.status).toBe(200);
-    expect(metricsView.body.data.metrics.map((metric) => metric.key).sort()).toEqual([
-      "mock.leads",
-      "mock.qualified_leads",
-      "mock.sessions",
-      "mock.spend",
+    const keys = [
+      ...metricsView.body.data.widgets.executive,
+      ...metricsView.body.data.widgets.performance,
+      ...metricsView.body.data.widgets.funnel,
+      ...metricsView.body.data.widgets.leads,
+    ].map((card) => card.key);
+    expect([...new Set(keys)].sort()).toEqual([
+      "AdsConversions",
+      "CostPerSession",
+      "KeyEvents",
+      "LeadCAC",
+      "Leads",
+      "QualifiedLeadCAC",
+      "Sessions",
+      "Spend",
     ]);
+    expect(metricsView.body.data.widgets.executive.every((card) => card.definitionVersion === "1")).toBe(true);
 
     const limited = new RateLimitedOnce();
     const again = await consumeSyncMessage(h.testDb.db, mine[1]!, new Map([["mock", limited]]));

@@ -1,8 +1,10 @@
 import { z } from "@hono/zod-openapi";
-import { and, desc, eq, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, isNull, or, sql } from "drizzle-orm";
 import { NotFoundError, assessDataHealth, ok } from "@marketing-os/core";
+import { buildKpiCards } from "@marketing-os/metrics/kpi";
+import type { MetricDefinition } from "@marketing-os/metrics";
 import { cockpitViewSchema, type CockpitView, type DataHealthItem } from "@marketing-os/schemas";
-import { connections, connectors, dataHealth, metricValues, workspaces } from "@marketing-os/db";
+import { connections, connectors, dataHealth, metricDefinitions, metricValues, workspaces } from "@marketing-os/db";
 import { requirePrincipal } from "../auth/principal";
 import { requireWorkspace } from "../auth/access";
 import { run, tenantContext } from "../context";
@@ -30,7 +32,7 @@ const STALE_AFTER_SECONDS = 24 * 60 * 60;
 cockpitRoutes.openapi(cockpitRoute, async (c) => {
     const workspaceId = parseUuidParam(c, "workspaceId");
     const now = Date.now();
-    const { workspace, rows, metrics } = await run(c, tenantContext(c), async (tx) => {
+    const { workspace, rows, current, previous, definitions } = await run(c, tenantContext(c), async (tx) => {
       const [workspace] = await tx
         .select({ name: workspaces.name })
         .from(workspaces)
@@ -73,24 +75,38 @@ cockpitRoutes.openapi(cockpitRoute, async (c) => {
           value: metricValues.value,
           definitionVersion: metricValues.definitionVersion,
           fetchedAt: metricValues.fetchedAt,
+          periodEnd: metricValues.periodEnd,
         })
         .from(metricValues)
         .innerJoin(connections, eq(connections.id, metricValues.connectionId))
         .where(eq(connections.workspaceId, workspaceId))
-        .orderBy(desc(metricValues.fetchedAt));
-      const seen = new Set<string>();
-      const metrics = stored.flatMap((row) => {
-        if (seen.has(row.key) || !row.definitionVersion) return [];
-        seen.add(row.key);
-        return [{
-          key: row.key,
-          value: row.value,
-          definitionVersion: row.definitionVersion,
-          source: row.key.split(".")[0] ?? "mock",
-          fetchedAt: new Date(row.fetchedAt).toISOString(),
-        }];
-      });
-      return { workspace, rows, metrics };
+        .orderBy(desc(metricValues.periodEnd));
+      const grouped = new Map<string, typeof stored>();
+      for (const row of stored) {
+        const list = grouped.get(row.key) ?? [];
+        list.push(row);
+        grouped.set(row.key, list);
+      }
+      const current: Record<string, { value: number; definitionVersion: string; fetchedAt: string }> = {};
+      const previous: Record<string, { value: number; definitionVersion: string }> = {};
+      for (const [key, points] of grouped) {
+        const latest = points[0];
+        if (!latest?.definitionVersion) continue;
+        current[key] = {
+          value: Number(latest.value),
+          definitionVersion: latest.definitionVersion,
+          fetchedAt: new Date(latest.fetchedAt).toISOString(),
+        };
+        const prior = points.find((point) => new Date(point.periodEnd).getTime() < new Date(latest.periodEnd).getTime());
+        if (prior?.definitionVersion) {
+          previous[key] = { value: Number(prior.value), definitionVersion: prior.definitionVersion };
+        }
+      }
+      const definitionRows = await tx
+        .select()
+        .from(metricDefinitions)
+        .where(or(isNull(metricDefinitions.tenantId), eq(metricDefinitions.tenantId, c.get("access").tenantId)));
+      return { workspace, rows, current, previous, definitions: definitionRows.map(asDefinition) };
     });
     if (!workspace) throw new NotFoundError("Workspace not found");
 
@@ -128,6 +144,20 @@ cockpitRoutes.openapi(cockpitRoute, async (c) => {
     const freshness: CockpitView["header"]["freshness"] =
       active.length === 0 ? "empty" : active.some((h) => h.health === "healthy") ? "live" : "stale";
 
+    const cards = buildKpiCards({
+      definitions,
+      current,
+      previous,
+      health: health.some((item) => item.health === "error") ? "error" : null,
+      now: new Date(now),
+    });
+    const widgets = {
+      executive: cards.filter((card) => card.widgets.includes("executive")),
+      performance: cards.filter((card) => card.widgets.includes("performance")),
+      funnel: cards.filter((card) => card.widgets.includes("funnel")),
+      leads: cards.filter((card) => card.widgets.includes("leads")),
+    };
+
     const view: CockpitView = cockpitViewSchema.parse({
       header: {
         workspaceId,
@@ -139,15 +169,42 @@ cockpitRoutes.openapi(cockpitRoute, async (c) => {
         },
         freshness,
       },
-      kpi_cards: [],
+      widgets,
       attention_queue: [],
       recommendations: [],
       data_health: health,
-      metrics,
       empty_state:
-        freshness === "empty"
+        freshness === "empty" && cards.length === 0
           ? { message: "Connect a data source and select accounts to populate the cockpit." }
           : null,
     });
     return c.json(ok(view), 200);
   });
+
+function asDefinition(row: {
+  key: string;
+  source: string;
+  version: string;
+  label: string;
+  unit: string | null;
+  formula: unknown;
+  target: string | null;
+  widgets: string[] | null;
+}): MetricDefinition {
+  const formula =
+    row.formula && typeof row.formula === "object" && "op" in row.formula
+      ? (row.formula as MetricDefinition["formula"])
+      : undefined;
+  return {
+    key: row.key,
+    source: row.source,
+    version: row.version,
+    label: row.label,
+    ...(row.unit ? { unit: row.unit } : {}),
+    ...(formula ? { formula } : {}),
+    ...(row.target != null ? { target: Number(row.target) } : {}),
+    ...(row.widgets && row.widgets.length > 0
+      ? { widgets: row.widgets as MetricDefinition["widgets"] }
+      : {}),
+  };
+}

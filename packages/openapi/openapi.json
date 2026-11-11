@@ -1209,28 +1209,75 @@
               "freshness"
             ]
           },
-          "kpi_cards": {
-            "type": "array",
-            "items": {
-              "type": "object"
-            }
+          "widgets": {
+            "type": "object",
+            "properties": {
+              "executive": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/KpiCard"
+                }
+              },
+              "performance": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/KpiCard"
+                }
+              },
+              "funnel": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/KpiCard"
+                }
+              },
+              "leads": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/KpiCard"
+                }
+              }
+            },
+            "required": [
+              "executive",
+              "performance",
+              "funnel",
+              "leads"
+            ]
           },
           "attention_queue": {
             "type": "array",
             "items": {
-              "type": "object"
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "message"
+              ]
             }
           },
           "recommendations": {
             "type": "array",
             "items": {
-              "type": "object"
-            }
-          },
-          "metrics": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/CockpitMetric"
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "message"
+              ]
             }
           },
           "data_health": {
@@ -1256,39 +1303,88 @@
         },
         "required": [
           "header",
-          "kpi_cards",
+          "widgets",
           "attention_queue",
           "recommendations",
-          "metrics",
           "data_health",
           "empty_state"
         ]
       },
-      "CockpitMetric": {
+      "KpiCard": {
         "type": "object",
         "properties": {
           "key": {
             "type": "string"
           },
-          "value": {
+          "label": {
             "type": "string"
           },
-          "definitionVersion": {
-            "type": "string"
+          "value": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "previous": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "target": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "delta": {
+            "type": [
+              "number",
+              "null"
+            ]
           },
           "source": {
             "type": "string"
           },
-          "fetchedAt": {
-            "type": "string"
+          "freshness": {
+            "type": "string",
+            "enum": [
+              "live",
+              "stale",
+              "empty",
+              "error"
+            ]
+          },
+          "definitionVersion": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "widgets": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "executive",
+                "performance",
+                "funnel",
+                "leads"
+              ]
+            }
           }
         },
         "required": [
           "key",
+          "label",
           "value",
-          "definitionVersion",
+          "previous",
+          "target",
+          "delta",
           "source",
-          "fetchedAt"
+          "freshness",
+          "definitionVersion",
+          "widgets"
         ]
       },
       "DataHealthItem": {

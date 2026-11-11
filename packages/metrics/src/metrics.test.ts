@@ -6,6 +6,7 @@ import {
   evaluateExpression,
   loadMetricsYaml,
   parseMetricsYaml,
+  platformKpiKeys,
   registerDefinitions,
   renderMetric,
   resolveCatalog,
@@ -87,7 +88,12 @@ describe("metrics semantic layer", () => {
     expect(values.LeadCAC).toBe(10);
     expect(values.QualifiedLeadCAC).toBe(50);
     expect(values.LeadCAC).not.toBe(values.QualifiedLeadCAC);
-    expect(doc.definitions.map((definition) => definition.key)).toContain("QualifiedLeadCAC");
+    for (const key of platformKpiKeys) {
+      expect(values[key], key).toEqual(expect.any(Number));
+      expect(Number.isFinite(values[key])).toBe(true);
+    }
+    expect(doc.definitions.find((definition) => definition.key === "Spend")?.target).toBeUndefined();
+    expect(doc.definitions.find((definition) => definition.key === "LeadCAC")?.target).toBe(40);
   });
 
   it("lets a tenant override replace a platform KPI without rewriting it", () => {
