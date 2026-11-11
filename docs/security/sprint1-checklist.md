@@ -27,5 +27,5 @@ Evidence for each item is in [s1-review.md](s1-review.md).
 ## Open
 
 - [ ] Turnstile widget and `TURNSTILE_SECRET_KEY` on staging. Until then the public lead form returns 503 on staging.
-- [ ] Content-Security-Policy on the web app (needs per-request nonces for Next.js inline scripts and Turnstile). Planned for Sprint 2.
+- [x] Content-Security-Policy on the web app. Per-request nonce in `apps/web/src/middleware.ts` (ADR-0020). Turnstile origin is allowlisted. `CSP_REPORT_ONLY=1` downgrades to report-only.
 - [ ] `send_email` binding on staging (needs an onboarded sender domain). Until then invitation email reports `emailDelivery: "failed"` and the console can resend.

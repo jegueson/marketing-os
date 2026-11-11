@@ -23,5 +23,6 @@ Decisions for Marketing OS. Format follows Michael Nygard's lightweight ADR. Sta
 | [0017](0017-openrouter-first-gateway.md) | OpenRouter-first model gateway | accepted |
 | [0018](0018-deployment-modes.md) | Two deployment modes and two self-host targets | accepted |
 | [0019](0019-openapi-client.md) | OpenAPI as the API contract and generated client | accepted |
+| [0020](0020-csp-nonces.md) | Content-Security-Policy with per-request nonces | accepted |
 
 Template for new records: [template.md](template.md).

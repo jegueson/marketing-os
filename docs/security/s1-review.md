@@ -29,8 +29,8 @@ include connection strings.
 
 ## Accepted risks for Sprint 1
 
-- No Content-Security-Policy on the web app yet. All data access goes through
-  the API with a Bearer token, and the web app renders no user HTML.
+- Content-Security-Policy with per-request nonces shipped in Sprint 2 (ADR-0020).
+  Sprint 1 had no CSP. Data access still goes through the API with a Bearer token.
 - Supabase session lives in browser storage (supabase-js default). The API
   enforces every permission, so a stolen token is limited to that user's
   access until it expires.

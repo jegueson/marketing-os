@@ -1,5 +1,5 @@
-// Sent on every web response. A Content-Security-Policy needs per-request
-// nonces for Next.js inline scripts and the Turnstile iframe, so it is not set here.
+// Static headers. The per-request Content-Security-Policy (with a nonce) is set
+// in src/middleware.ts because next.config headers cannot vary per request.
 export const securityHeaders: ReadonlyArray<{ key: string; value: string }> = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Frame-Options", value: "DENY" },
