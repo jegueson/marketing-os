@@ -4,3 +4,4 @@ export * from "./leads";
 export * from "./onboarding";
 export * from "./integrations";
 export * from "./platform";
+export * from "./metrics";

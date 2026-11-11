@@ -1,0 +1,127 @@
+version: 1
+definitions:
+  - key: google_ads.spend
+    source: google_ads
+    version: "1"
+    label: Google Ads spend
+    unit: currency
+  - key: mock.spend
+    source: mock
+    version: "1"
+    label: Mock spend
+    unit: currency
+  - key: ga4.sessions
+    source: ga4
+    version: "1"
+    label: Sessions
+    unit: count
+  - key: mock.sessions
+    source: mock
+    version: "1"
+    label: Mock sessions
+    unit: count
+  - key: ga4.key_events
+    source: ga4
+    version: "1"
+    label: GA4 key events
+    unit: count
+  - key: google_ads.conversions
+    source: google_ads
+    version: "1"
+    label: Google Ads conversions
+    unit: count
+  - key: hubspot.contacts_created
+    source: hubspot
+    version: "1"
+    label: HubSpot contacts created
+    unit: count
+  - key: mock.leads
+    source: mock
+    version: "1"
+    label: Mock leads
+    unit: count
+  - key: hubspot.deals_qualified
+    source: hubspot
+    version: "1"
+    label: HubSpot qualified deals
+    unit: count
+  - key: mock.qualified_leads
+    source: mock
+    version: "1"
+    label: Mock qualified leads
+    unit: count
+  - key: Spend
+    source: formula
+    version: "1"
+    label: Spend
+    unit: currency
+    formula:
+      op: sum
+      metric: mock.spend
+  - key: Sessions
+    source: formula
+    version: "1"
+    label: Sessions
+    unit: count
+    formula:
+      op: sum
+      metric: mock.sessions
+  - key: KeyEvents
+    source: formula
+    version: "1"
+    label: Key events
+    unit: count
+    formula:
+      op: sum
+      metric: ga4.key_events
+  - key: AdsConversions
+    source: formula
+    version: "1"
+    label: Ads conversions
+    unit: count
+    formula:
+      op: sum
+      metric: google_ads.conversions
+  - key: Leads
+    source: formula
+    version: "1"
+    label: Leads
+    unit: count
+    formula:
+      op: sum
+      metric: mock.leads
+  - key: QualifiedLeads
+    source: formula
+    version: "1"
+    label: Qualified leads
+    unit: count
+    formula:
+      op: sum
+      metric: hubspot.deals_qualified
+  - key: LeadCAC
+    source: formula
+    version: "1"
+    label: Lead CAC
+    unit: currency
+    formula:
+      op: ratio
+      numerator: Spend
+      denominator: Leads
+  - key: QualifiedLeadCAC
+    source: formula
+    version: "1"
+    label: Qualified lead CAC
+    unit: currency
+    formula:
+      op: ratio
+      numerator: Spend
+      denominator: QualifiedLeads
+  - key: CostPerSession
+    source: formula
+    version: "1"
+    label: Cost per session
+    unit: currency
+    formula:
+      op: ratio
+      numerator: Spend
+      denominator: Sessions
