@@ -56,6 +56,7 @@ export {
 } from "./outbox";
 export { formatLogLine, redactPii, type LogFields } from "./telemetry";
 export {
+  assessDataHealth,
   deriveDataHealth,
   planBackfillWindows,
   planSyncJobs,

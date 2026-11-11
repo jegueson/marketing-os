@@ -296,6 +296,7 @@ integrationsRoutes.openapi(listResourcesRoute, async (c) => {
           resourceType: r.kind,
           resourceId: r.name,
           resourceName: r.description ?? r.name,
+          parentId: r.parentId ?? null,
           selected: chosen.has(`${r.kind}:${r.name}`),
         })),
       ),

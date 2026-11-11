@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { deriveDataHealth, planBackfillWindows, planSyncJobs, rateLimitBackoffMs } from "./scheduler";
+import { deriveDataHealth, planBackfillWindows, planSyncJobs, rateLimitBackoffMs, assessDataHealth } from "./scheduler";
 
 describe("scheduler and data health", () => {
   it("plans due sync jobs", () => {
@@ -36,5 +36,51 @@ describe("scheduler and data health", () => {
       now: new Date("2026-01-01T00:00:00.000Z"),
     });
     expect(health.status).toBe("stale");
+    expect(health.dimensions.freshness).toBe("stale");
+  });
+
+  it("reports volume, schema, and permission failures", () => {
+    const now = new Date("2026-11-11T00:00:00.000Z");
+    const fresh = now.toISOString();
+    expect(
+      assessDataHealth({
+        connectionId: "c1",
+        lastSuccessAt: fresh,
+        lastErrorAt: null,
+        staleAfterSeconds: 86_400,
+        recordCount: 0,
+        now,
+      }).dimensions.volume,
+    ).toBe("error");
+    const schema = assessDataHealth({
+      connectionId: "c1",
+      lastSuccessAt: fresh,
+      lastErrorAt: null,
+      staleAfterSeconds: 86_400,
+      schemaState: "mismatch",
+      now,
+    });
+    expect(schema.status).toBe("error");
+    expect(schema.dimensions.schema).toBe("error");
+    const permission = assessDataHealth({
+      connectionId: "c1",
+      lastSuccessAt: null,
+      lastErrorAt: fresh,
+      staleAfterSeconds: 86_400,
+      issues: [{ code: "permission_changed", message: "Access changed" }],
+      now,
+    });
+    expect(permission.status).toBe("error");
+    expect(permission.dimensions.permissions).toBe("error");
+    expect(permission.issues[0]?.message).toBe("Access changed");
+    expect(
+      assessDataHealth({
+        connectionId: "c1",
+        lastSuccessAt: null,
+        lastErrorAt: null,
+        staleAfterSeconds: 86_400,
+        now,
+      }).status,
+    ).toBe("never_synced");
   });
 });

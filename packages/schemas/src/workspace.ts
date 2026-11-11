@@ -42,12 +42,22 @@ export const dataHealthItemSchema = z
     connector: z.string(),
     displayName: z.string(),
     status: z.enum(["pending", "active", "error", "disconnected", "expired"]),
-    health: z.enum(["healthy", "stale", "error", "unknown"]),
+    health: z.enum(["healthy", "stale", "error", "never_synced"]),
     scopes: z.number().int().nonnegative(),
     lastHealthyAt: z.string().nullable(),
     message: z.string().nullable(),
   })
   .openapi("DataHealthItem");
+
+export const cockpitMetricSchema = z
+  .object({
+    key: z.string(),
+    value: z.string(),
+    definitionVersion: z.string(),
+    source: z.string(),
+    fetchedAt: z.string(),
+  })
+  .openapi("CockpitMetric");
 
 export const cockpitViewSchema = z
   .object({
@@ -61,6 +71,7 @@ export const cockpitViewSchema = z
     kpi_cards: z.array(NEVER_ITEM),
     attention_queue: z.array(NEVER_ITEM),
     recommendations: z.array(NEVER_ITEM),
+    metrics: z.array(cockpitMetricSchema),
     data_health: z.array(dataHealthItemSchema),
     empty_state: z.object({ message: z.string() }).nullable(),
   })

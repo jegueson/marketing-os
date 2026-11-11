@@ -24,7 +24,19 @@ function Cockpit({ auth, ws }: { auth: ReadyAuth; ws: Membership }) {
             </>
           ) : null}
           <h2>Performance</h2>
-          <p>KPI cards arrive with the first real connectors.</p>
+          {view.metrics.length === 0 ? (
+            <p>KPI cards arrive with the first real connectors.</p>
+          ) : (
+            <Table
+              headers={["Metric", "Value", "Definition", "Fetched"]}
+              rows={view.metrics.map((metric) => [
+                metric.key,
+                metric.value,
+                metric.definitionVersion,
+                new Date(metric.fetchedAt).toLocaleString(),
+              ])}
+            />
+          )}
           <h2>Data health</h2>
           {view.data_health.length === 0 ? (
             <p>No sources connected.</p>

@@ -26,6 +26,18 @@ describe("mock connector", () => {
     }
   });
 
+  it("returns namespaced metrics with lineage", async () => {
+    const connector = new MockConnector();
+    const namespaced = await connector.queryMetrics(ctx, { metric: "mock.spend", ...window });
+    const plain = await connector.queryMetrics(ctx, { metric: "spend", ...window });
+    expect(namespaced[0]).toMatchObject({
+      metric: "mock.spend",
+      value: plain[0]?.value,
+      lineage: { source: "mock", definitionVersion: "1" },
+    });
+    expect(namespaced[0]?.lineage.fetchedAt).toEqual(expect.any(String));
+  });
+
   it("rejects unknown metrics with a typed error", async () => {
     await expect(
       new MockConnector().queryMetrics(ctx, { metric: "nope", ...window }),

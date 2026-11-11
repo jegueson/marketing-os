@@ -2735,10 +2735,18 @@ export interface components {
             kpi_cards: Record<string, never>[];
             attention_queue: Record<string, never>[];
             recommendations: Record<string, never>[];
+            metrics: components["schemas"]["CockpitMetric"][];
             data_health: components["schemas"]["DataHealthItem"][];
             empty_state: {
                 message: string;
             } | null;
+        };
+        CockpitMetric: {
+            key: string;
+            value: string;
+            definitionVersion: string;
+            source: string;
+            fetchedAt: string;
         };
         DataHealthItem: {
             /** Format: uuid */
@@ -2748,7 +2756,7 @@ export interface components {
             /** @enum {string} */
             status: "pending" | "active" | "error" | "disconnected" | "expired";
             /** @enum {string} */
-            health: "healthy" | "stale" | "error" | "unknown";
+            health: "healthy" | "stale" | "error" | "never_synced";
             scopes: number;
             lastHealthyAt: string | null;
             message: string | null;

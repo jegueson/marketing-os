@@ -1227,6 +1227,12 @@
               "type": "object"
             }
           },
+          "metrics": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CockpitMetric"
+            }
+          },
           "data_health": {
             "type": "array",
             "items": {
@@ -1253,8 +1259,36 @@
           "kpi_cards",
           "attention_queue",
           "recommendations",
+          "metrics",
           "data_health",
           "empty_state"
+        ]
+      },
+      "CockpitMetric": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          },
+          "definitionVersion": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "fetchedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "value",
+          "definitionVersion",
+          "source",
+          "fetchedAt"
         ]
       },
       "DataHealthItem": {
@@ -1286,7 +1320,7 @@
               "healthy",
               "stale",
               "error",
-              "unknown"
+              "never_synced"
             ]
           },
           "scopes": {

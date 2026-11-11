@@ -1,9 +1,10 @@
 import { and, eq, sql } from "drizzle-orm";
-import { planBackfillWindows, planSyncJobs } from "@marketing-os/core";
 import { ConnectorError, type Connector } from "@marketing-os/connector-sdk";
+import { assessDataHealth, planBackfillWindows, planSyncJobs } from "@marketing-os/core";
 import {
   connections,
   connectors,
+  dataHealth,
   dataScopes,
   metricValues,
   selectRows,
@@ -15,7 +16,7 @@ import {
 import { systemContext } from "../context";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-const MOCK_METRICS = ["spend", "sessions", "leads"] as const;
+const MOCK_METRICS = ["mock.spend", "mock.sessions", "mock.leads", "mock.qualified_leads"] as const;
 
 export type SyncMessage = {
   runId: number;
@@ -161,7 +162,7 @@ export async function consumeSyncMessage(
           .insert(metricValues)
           .values({
             tenantId: message.tenantId,
-            definitionKey: `mock.${metric}`,
+            definitionKey: result.metric,
             definitionVersion: result.lineage.definitionVersion,
             periodStart: run.windowStart,
             periodEnd: run.windowEnd,
@@ -183,6 +184,25 @@ export async function consumeSyncMessage(
           });
       }
       await tx.update(syncRuns).set({ status: "succeeded", finishedAt: new Date() }).where(eq(syncRuns.id, run.id));
+      const health = assessDataHealth({
+        connectionId: run.connectionId,
+        lastSuccessAt: new Date().toISOString(),
+        lastErrorAt: null,
+        staleAfterSeconds: 24 * 60 * 60,
+        recordCount: MOCK_METRICS.length,
+        schemaState: "ok",
+        issues: [],
+      });
+      await tx.insert(dataHealth).values({
+        connectionId: run.connectionId,
+        tenantId: message.tenantId,
+        status: health.status,
+        freshnessAt: new Date(),
+        schemaState: "ok",
+        recordCount: String(MOCK_METRICS.length),
+        issues: health.issues,
+        checkedAt: new Date(),
+      });
       await tx
         .insert(syncCursors)
         .values({ connectionId: run.connectionId, tenantId: message.tenantId, cursor: new Date(run.windowEnd).toISOString() })
@@ -199,9 +219,30 @@ export async function consumeSyncMessage(
         outcome = "retry";
         return;
       }
+      const code = err instanceof ConnectorError ? err.code : "sync_failed";
+      const schemaState = code === "api_version_error" ? "mismatch" : "ok";
+      const health = assessDataHealth({
+        connectionId: run.connectionId,
+        lastSuccessAt: null,
+        lastErrorAt: new Date().toISOString(),
+        staleAfterSeconds: 24 * 60 * 60,
+        recordCount: null,
+        schemaState,
+        issues: [{ code, message: err instanceof Error ? err.message : "Sync failed" }],
+      });
+      await tx.insert(dataHealth).values({
+        connectionId: run.connectionId,
+        tenantId: message.tenantId,
+        status: health.status,
+        freshnessAt: null,
+        schemaState,
+        recordCount: null,
+        issues: health.issues,
+        checkedAt: new Date(),
+      });
       await tx
         .update(syncRuns)
-        .set({ status: "failed", errorCode: err instanceof ConnectorError ? err.code : "sync_failed", finishedAt: new Date() })
+        .set({ status: "failed", errorCode: code, finishedAt: new Date() })
         .where(eq(syncRuns.id, run.id));
     }
   });

@@ -1,8 +1,8 @@
 import { z } from "@hono/zod-openapi";
 import { and, desc, eq, isNull, sql } from "drizzle-orm";
-import { NotFoundError, ok } from "@marketing-os/core";
+import { NotFoundError, assessDataHealth, ok } from "@marketing-os/core";
 import { cockpitViewSchema, type CockpitView, type DataHealthItem } from "@marketing-os/schemas";
-import { connections, connectors, dataHealth, workspaces } from "@marketing-os/db";
+import { connections, connectors, dataHealth, metricValues, workspaces } from "@marketing-os/db";
 import { requirePrincipal } from "../auth/principal";
 import { requireWorkspace } from "../auth/access";
 import { run, tenantContext } from "../context";
@@ -25,23 +25,12 @@ const cockpitRoute = defineRoute({
 });
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-/** Data older than this shows as stale in the cockpit. */
-const STALE_AFTER_MS = DAY_MS;
-
-type HealthState = DataHealthItem["health"];
-
-function healthOf(status: string | null, freshnessAt: Date | null, now: number): HealthState {
-  if (status === "healthy") {
-    return freshnessAt && now - freshnessAt.getTime() <= STALE_AFTER_MS ? "healthy" : "stale";
-  }
-  if (status === "error" || status === "stale") return status;
-  return "unknown";
-}
+const STALE_AFTER_SECONDS = 24 * 60 * 60;
 
 cockpitRoutes.openapi(cockpitRoute, async (c) => {
     const workspaceId = parseUuidParam(c, "workspaceId");
     const now = Date.now();
-    const { workspace, rows } = await run(c, tenantContext(c), async (tx) => {
+    const { workspace, rows, metrics } = await run(c, tenantContext(c), async (tx) => {
       const [workspace] = await tx
         .select({ name: workspaces.name })
         .from(workspaces)
@@ -51,6 +40,8 @@ cockpitRoutes.openapi(cockpitRoute, async (c) => {
           connectionId: dataHealth.connectionId,
           status: dataHealth.status,
           freshnessAt: dataHealth.freshnessAt,
+          schemaState: dataHealth.schemaState,
+          recordCount: dataHealth.recordCount,
           issues: dataHealth.issues,
           rank: sql<number>`row_number() over (partition by ${dataHealth.connectionId} order by ${dataHealth.checkedAt} desc)`.as("rank"),
         })
@@ -67,26 +58,72 @@ cockpitRoutes.openapi(cockpitRoute, async (c) => {
           scopes: sql<number>`(select count(*)::int from data_scopes s where s.connection_id = ${connections.id} and s.is_active)`,
           healthStatus: latest.status,
           freshnessAt: latest.freshnessAt,
+          schemaState: latest.schemaState,
+          recordCount: latest.recordCount,
+          issues: latest.issues,
         })
         .from(connections)
         .innerJoin(connectors, eq(connectors.id, connections.connectorId))
         .leftJoin(latest, and(eq(latest.connectionId, connections.id), eq(latest.rank, 1)))
         .where(and(eq(connections.workspaceId, workspaceId), isNull(connections.deletedAt)))
         .orderBy(desc(connections.createdAt));
-      return { workspace, rows };
+      const stored = await tx
+        .select({
+          key: metricValues.definitionKey,
+          value: metricValues.value,
+          definitionVersion: metricValues.definitionVersion,
+          fetchedAt: metricValues.fetchedAt,
+        })
+        .from(metricValues)
+        .innerJoin(connections, eq(connections.id, metricValues.connectionId))
+        .where(eq(connections.workspaceId, workspaceId))
+        .orderBy(desc(metricValues.fetchedAt));
+      const seen = new Set<string>();
+      const metrics = stored.flatMap((row) => {
+        if (seen.has(row.key) || !row.definitionVersion) return [];
+        seen.add(row.key);
+        return [{
+          key: row.key,
+          value: row.value,
+          definitionVersion: row.definitionVersion,
+          source: row.key.split(".")[0] ?? "mock",
+          fetchedAt: new Date(row.fetchedAt).toISOString(),
+        }];
+      });
+      return { workspace, rows, metrics };
     });
     if (!workspace) throw new NotFoundError("Workspace not found");
 
-    const health: DataHealthItem[] = rows.map((row) => ({
-      connectionId: row.id,
-      connector: row.connector,
-      displayName: row.displayName,
-      status: row.status as DataHealthItem["status"],
-      health: healthOf(row.healthStatus, row.freshnessAt ? new Date(row.freshnessAt) : null, now),
-      scopes: row.scopes,
-      lastHealthyAt: row.lastHealthyAt ? new Date(row.lastHealthyAt).toISOString() : null,
-      message: row.errorMessage,
-    }));
+    const health: DataHealthItem[] = rows.map((row) => {
+      const issues = Array.isArray(row.issues)
+        ? row.issues.flatMap((issue) => {
+            if (!issue || typeof issue !== "object") return [];
+            const code = "code" in issue && typeof issue.code === "string" ? issue.code : "";
+            const message = "message" in issue && typeof issue.message === "string" ? issue.message : "";
+            return code ? [{ code, message }] : [];
+          })
+        : [];
+      const report = assessDataHealth({
+        connectionId: row.id,
+        lastSuccessAt: row.freshnessAt ? new Date(row.freshnessAt).toISOString() : null,
+        lastErrorAt: row.healthStatus === "error" && row.freshnessAt ? new Date(row.freshnessAt).toISOString() : null,
+        staleAfterSeconds: STALE_AFTER_SECONDS,
+        recordCount: row.recordCount == null ? null : Number(row.recordCount),
+        schemaState: row.schemaState === "mismatch" ? "mismatch" : row.schemaState === "ok" ? "ok" : null,
+        issues,
+        now: new Date(now),
+      });
+      return {
+        connectionId: row.id,
+        connector: row.connector,
+        displayName: row.displayName,
+        status: row.status as DataHealthItem["status"],
+        health: report.status,
+        scopes: row.scopes,
+        lastHealthyAt: row.freshnessAt ? new Date(row.freshnessAt).toISOString() : row.lastHealthyAt ? new Date(row.lastHealthyAt).toISOString() : null,
+        message: report.issues[0]?.message ?? row.errorMessage,
+      };
+    });
     const active = health.filter((h) => h.status === "active");
     const freshness: CockpitView["header"]["freshness"] =
       active.length === 0 ? "empty" : active.some((h) => h.health === "healthy") ? "live" : "stale";
@@ -106,6 +143,7 @@ cockpitRoutes.openapi(cockpitRoute, async (c) => {
       attention_queue: [],
       recommendations: [],
       data_health: health,
+      metrics,
       empty_state:
         freshness === "empty"
           ? { message: "Connect a data source and select accounts to populate the cockpit." }

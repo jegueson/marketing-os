@@ -1,6 +1,6 @@
 import { z } from "@hono/zod-openapi";
 import { and, eq, isNull } from "drizzle-orm";
-import { NotFoundError, ValidationError, ok } from "@marketing-os/core";
+import { AppError, NotFoundError, ok } from "@marketing-os/core";
 import { connections, connectors, syncCursors } from "@marketing-os/db";
 import { requireWorkspace } from "../auth/access";
 import { run, tenantContext } from "../context";
@@ -50,7 +50,7 @@ syncRoutes.openapi(syncRoute, async (c) => {
       });
     } catch (err) {
       if (err instanceof Error && err.name === "NoScopes") {
-        throw new ValidationError("Select at least one account or resource before syncing");
+        throw new AppError("no_scopes_selected", "Select at least one account or resource before syncing", 422);
       }
       throw err;
     }

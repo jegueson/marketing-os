@@ -54,6 +54,7 @@ describe("cockpitViewSchema", () => {
       kpi_cards: [],
       attention_queue: [],
       recommendations: [],
+      metrics: [],
       data_health: [],
       empty_state: { message: "Connect a data source" },
     };

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button, EmptyState, ErrorState, Table } from "@marketing-os/ui";
 import { RequireAuth, type ReadyAuth } from "@/components/auth";
 import { useApi, View } from "@/components/api-view";
+import { ScopePicker, resourceKey, type ResourceOption } from "@/components/scope-picker";
 import { PortalFrame } from "@/components/workspace";
 import type { Membership } from "@/lib/workspace";
 
@@ -20,12 +21,6 @@ type Connection = {
   status: string;
   errorMessage: string | null;
   scopes: number;
-};
-type ResourceOption = {
-  resourceType: string;
-  resourceId: string;
-  resourceName: string;
-  selected: boolean;
 };
 
 const MANAGERS = new Set(["customer_admin", "platform_admin", "success_manager", "ai_specialist"]);
@@ -51,7 +46,7 @@ function ConnectionSetup({
 
   const selected = (options: ResourceOption[]) =>
     chosen ??
-    new Set(options.filter((o) => o.selected).map((o) => `${o.resourceType}:${o.resourceId}`));
+    new Set(options.filter((o) => o.selected).map(resourceKey));
 
   async function reconnect() {
     setMessage(null);
@@ -116,30 +111,17 @@ function ConnectionSetup({
         {(options) => {
           const keys = selected(options);
           return (
-            <>
-              <p>Step 2: choose what Marketing OS may read. Nothing is selected by default.</p>
-              {options.map((o) => {
-                const key = `${o.resourceType}:${o.resourceId}`;
-                return (
-                  <label key={key} style={{ display: "block" }}>
-                    <input
-                      type="checkbox"
-                      checked={keys.has(key)}
-                      onChange={(e) => {
-                        const next = new Set(keys);
-                        if (e.target.checked) next.add(key);
-                        else next.delete(key);
-                        setChosen(next);
-                      }}
-                    />{" "}
-                    {o.resourceName} ({o.resourceType})
-                  </label>
-                );
-              })}
-              <Button onClick={() => void saveAndTest(options)}>
-                Step 3: save and test connection
-              </Button>
-            </>
+            <ScopePicker
+              options={options}
+              chosen={keys}
+              onToggle={(key, checked) => {
+                const next = new Set(keys);
+                if (checked) next.add(key);
+                else next.delete(key);
+                setChosen(next);
+              }}
+              onSave={() => void saveAndTest(options)}
+            />
           );
         }}
       </View>

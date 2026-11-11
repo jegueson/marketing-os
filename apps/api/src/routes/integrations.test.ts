@@ -149,6 +149,17 @@ describe("connections, cockpit and onboarding", () => {
     const globex = await provisionCustomer(h, sm, "Globex", "owner@globex.test");
     expect((await h.call(`${base}/connections`, { token: globex.admin.token })).status).toBe(403);
     expect((await h.call(`${base}/cockpit`, { token: globex.admin.token })).status).toBe(403);
+    const conn = await createConnection();
+    expect((await h.call(`${base}/connections/${conn.body.data.id}/resources`, { token: globex.admin.token })).status).toBe(403);
+    expect(
+      (
+        await h.call(`${base}/connections/${conn.body.data.id}/scopes`, {
+          method: "PUT",
+          body: { resources: [] },
+          token: globex.admin.token,
+        })
+      ).status,
+    ).toBe(403);
 
     await h.testDb.pg.query(
       "update tenant_memberships set role = 'customer_user' where user_id = $1",

@@ -26,6 +26,17 @@ const MOCK_METRICS: Record<string, { perDay: number; unit: string }> = {
   sessions: { perDay: 340, unit: "count" },
   conversions: { perDay: 12, unit: "count" },
   leads: { perDay: 4, unit: "count" },
+  qualified_leads: { perDay: 1, unit: "count" },
+};
+
+/** Platform catalog keys. Short names stay so older callers and the contract kit still work. */
+const MOCK_METRIC_ALIASES: Record<string, string> = {
+  "mock.spend": "spend",
+  "mock.sessions": "sessions",
+  "mock.leads": "leads",
+  "mock.qualified_leads": "qualified_leads",
+  "mock.impressions": "impressions",
+  "mock.conversions": "conversions",
 };
 
 export class MockConnector implements Connector {
@@ -47,8 +58,8 @@ export class MockConnector implements Connector {
     void _ctx;
     return [
       ...MOCK_ACCOUNTS.map((account) => ({ name: account.id, kind: "account", description: account.name })),
-      { name: "campaigns", kind: "campaign", description: "Mock campaigns" },
-      { name: "leads", kind: "lead", description: "Mock leads" },
+      { name: "campaigns", kind: "campaign", description: "Mock campaigns", parentId: "mock-account-1" },
+      { name: "leads", kind: "lead", description: "Mock leads", parentId: "mock-account-2" },
     ];
   }
 
@@ -86,7 +97,7 @@ export class MockConnector implements Connector {
     if (_ctx.credentials["fail"] === "1") {
       throw new ConnectorError("Injected failure", "provider_error", true);
     }
-    const definition = MOCK_METRICS[query.metric];
+    const definition = MOCK_METRICS[MOCK_METRIC_ALIASES[query.metric] ?? query.metric];
     if (!definition) {
       throw new ConnectorError(`Unknown metric ${query.metric}`, "not_found");
     }

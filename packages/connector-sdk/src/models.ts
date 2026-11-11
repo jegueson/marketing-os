@@ -19,6 +19,7 @@ export const resourceSchema = z.object({
   name: z.string(),
   kind: z.string(),
   description: z.string().optional(),
+  parentId: z.string().optional(),
 });
 
 export const metricQuerySchema = z.object({

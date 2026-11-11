@@ -13,13 +13,83 @@ export type SyncJob = z.infer<typeof syncJobSchema>;
 
 export type DataHealthStatus = "healthy" | "stale" | "error" | "never_synced";
 
+export type HealthDimensionState = "healthy" | "stale" | "error" | "never_synced";
+
+export type DataHealthIssue = { code: string; message: string };
+
 export type DataHealth = {
   connectionId: string;
   status: DataHealthStatus;
   lastSuccessAt: string | null;
   lastErrorAt: string | null;
   freshnessSeconds: number | null;
+  dimensions: {
+    freshness: HealthDimensionState;
+    volume: HealthDimensionState;
+    schema: HealthDimensionState;
+    errors: HealthDimensionState;
+    permissions: HealthDimensionState;
+  };
+  issues: DataHealthIssue[];
 };
+
+export function assessDataHealth(input: {
+  connectionId: string;
+  lastSuccessAt: string | null;
+  lastErrorAt: string | null;
+  staleAfterSeconds: number;
+  recordCount?: number | null;
+  schemaState?: "ok" | "mismatch" | null;
+  issues?: DataHealthIssue[];
+  now?: Date;
+}): DataHealth {
+  const now = input.now ?? new Date();
+  const issues = [...(input.issues ?? [])];
+  let freshness: HealthDimensionState = "never_synced";
+  let freshnessSeconds: number | null = null;
+  if (input.lastSuccessAt) {
+    freshnessSeconds = Math.floor((now.getTime() - new Date(input.lastSuccessAt).getTime()) / 1000);
+    freshness = freshnessSeconds > input.staleAfterSeconds ? "stale" : "healthy";
+  }
+
+  const volume: HealthDimensionState = input.recordCount != null && input.recordCount <= 0 ? "error" : "healthy";
+  if (volume === "error") issues.push({ code: "volume", message: "The latest sync stored no records" });
+
+  const schema: HealthDimensionState = input.schemaState === "mismatch" ? "error" : "healthy";
+  if (schema === "error") {
+    issues.push({ code: "schema", message: "The provider schema no longer matches this connector" });
+  }
+
+  const permissions: HealthDimensionState = issues.some((issue) =>
+    issue.code === "permission_changed" || issue.code === "access_revoked",
+  )
+    ? "error"
+    : "healthy";
+
+  const errors: HealthDimensionState =
+    input.lastErrorAt && (!input.lastSuccessAt || new Date(input.lastErrorAt) > new Date(input.lastSuccessAt))
+      ? "error"
+      : "healthy";
+
+  let status: DataHealthStatus = "healthy";
+  if (permissions === "error" || schema === "error" || errors === "error" || volume === "error" || issues.length > 0 && !input.lastSuccessAt) {
+    status = "error";
+  } else if (!input.lastSuccessAt) {
+    status = "never_synced";
+  } else if (freshness === "stale") {
+    status = "stale";
+  }
+
+  return {
+    connectionId: input.connectionId,
+    status,
+    lastSuccessAt: input.lastSuccessAt,
+    lastErrorAt: input.lastErrorAt,
+    freshnessSeconds,
+    dimensions: { freshness, volume, schema, errors, permissions },
+    issues,
+  };
+}
 
 export function deriveDataHealth(input: {
   connectionId: string;
@@ -28,30 +98,7 @@ export function deriveDataHealth(input: {
   staleAfterSeconds: number;
   now?: Date;
 }): DataHealth {
-  const now = input.now ?? new Date();
-  if (!input.lastSuccessAt) {
-    return {
-      connectionId: input.connectionId,
-      status: input.lastErrorAt ? "error" : "never_synced",
-      lastSuccessAt: null,
-      lastErrorAt: input.lastErrorAt,
-      freshnessSeconds: null,
-    };
-  }
-  const age = Math.floor((now.getTime() - new Date(input.lastSuccessAt).getTime()) / 1000);
-  const status: DataHealthStatus =
-    input.lastErrorAt && new Date(input.lastErrorAt) > new Date(input.lastSuccessAt)
-      ? "error"
-      : age > input.staleAfterSeconds
-        ? "stale"
-        : "healthy";
-  return {
-    connectionId: input.connectionId,
-    status,
-    lastSuccessAt: input.lastSuccessAt,
-    lastErrorAt: input.lastErrorAt,
-    freshnessSeconds: age,
-  };
+  return assessDataHealth(input);
 }
 
 /** 90-day backfill split into contiguous chunks, oldest first. */

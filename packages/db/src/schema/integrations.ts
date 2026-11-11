@@ -126,7 +126,7 @@ export const dataHealth = pgTable(
       .notNull()
       .references(() => tenants.id),
     dataScopeId: uuid("data_scope_id").references(() => dataScopes.id),
-    status: text("status").notNull().default("unknown"),
+    status: text("status").notNull().default("never_synced"),
     freshnessAt: timestamp("freshness_at", { withTimezone: true }),
     schemaState: text("schema_state"),
     recordCount: text("record_count"),
@@ -139,7 +139,7 @@ export const dataHealth = pgTable(
     index("idx_data_health_tenant_id").on(table.tenantId),
     check(
       "data_health_status_check",
-      sql`${table.status} in ('healthy','stale','error','unknown')`,
+      sql`${table.status} in ('healthy','stale','error','never_synced')`,
     ),
   ],
 );
