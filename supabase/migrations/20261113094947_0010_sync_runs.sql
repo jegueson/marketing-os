@@ -77,3 +77,5 @@ $$;
 
 revoke all on function app.due_sync_connections() from public;
 grant execute on function app.due_sync_connections() to app_api;
+
+grant usage, select on all sequences in schema public to app_api;

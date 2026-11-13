@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "test": "playwright test",
-    "test:api": "vitest run --root .. e2e/"
+    "test:api": "vitest run --root .. e2e/",
+    "demo:screenshots": "node demo/screenshots.mjs",
+    "demo:tour": "node demo/tour-smoke.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",

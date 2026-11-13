@@ -63,6 +63,8 @@ There is no self-service checkout. Cloud workspaces are provisioned after a conv
 | [packages/](packages) | core, db, ui, schemas, connector-sdk, metrics, api-client |
 | [connectors/mock](connectors/mock) | Deterministic Sprint 1 connector |
 | [docs/adr/](docs/adr/README.md) | Architecture decisions |
+| [docs/design/](docs/design/README.md) | Investor demo (`demo/investor` branch): design system, screens, demo script |
+| [Planning/prd_v4_addendum.md](Planning/prd_v4_addendum.md) | Daily workspace, intelligence, studio, influencer, automation integration |
 | [docs/architecture/sprint1-schema.md](docs/architecture/sprint1-schema.md) | Database contract for the first schema |
 | [docs/security/sprint1-checklist.md](docs/security/sprint1-checklist.md) | Sprint 1 security checklist |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | How to change the code |

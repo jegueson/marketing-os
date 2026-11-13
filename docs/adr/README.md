@@ -25,5 +25,7 @@ Decisions for Marketing OS. Format follows Michael Nygard's lightweight ADR. Sta
 | [0019](0019-openapi-client.md) | OpenAPI as the API contract and generated client | accepted |
 | [0020](0020-csp-nonces.md) | Content-Security-Policy with per-request nonces | accepted |
 | [0021](0021-sync-queue.md) | Sync jobs use their own queue | accepted |
+| [0022](0022-external-automation-platforms.md) | Integrate with n8n, Zapier and Make; do not embed them | accepted |
+| [0023](0023-creative-tools-as-connectors.md) | Creative generation tools are connectors | accepted |
 
 Template for new records: [template.md](template.md).

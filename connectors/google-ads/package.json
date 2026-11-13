@@ -1,0 +1,21 @@
+{
+  "name": "@marketing-os/connector-google-ads",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@marketing-os/connector-sdk": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "typescript": "^5.9.2",
+    "vitest": "^5.1.0"
+  }
+}

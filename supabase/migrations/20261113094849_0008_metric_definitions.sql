@@ -78,3 +78,5 @@ create policy metric_values_tenant_isolation on public.metric_values
   for all to app_api
   using (tenant_id = app.current_tenant_id())
   with check (tenant_id = app.current_tenant_id());
+
+grant usage, select on all sequences in schema public to app_api;

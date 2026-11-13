@@ -12,6 +12,10 @@
   },
   "dependencies": {
     "@hono/zod-openapi": "^1.6.3",
+    "@marketing-os/connector-google-ads": "workspace:*",
+    "@marketing-os/connector-hubspot": "workspace:*",
+    "@marketing-os/connector-meta": "workspace:*",
+    "@marketing-os/connector-google-analytics": "workspace:*",
     "@marketing-os/connector-mock": "workspace:*",
     "@marketing-os/connector-sdk": "workspace:*",
     "@marketing-os/core": "workspace:*",
