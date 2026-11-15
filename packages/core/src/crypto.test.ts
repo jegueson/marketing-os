@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { decryptSecret, encryptSecret, fromStoredCredential, importMasterKey, openKeyRing, toStoredCredential } from "./crypto";
+import {
+  decryptSecret,
+  encryptSecret,
+  fingerprintSecret,
+  fromStoredCredential,
+  importMasterKey,
+  openKeyRing,
+  toStoredCredential,
+} from "./crypto";
 
 function encodedKey(): string {
   const raw = crypto.getRandomValues(new Uint8Array(32));
@@ -46,5 +54,12 @@ describe("credential encryption", () => {
     const sealed = await ring.seal("ya29.fixture-token");
     const flipped = `${sealed.ciphertext.slice(0, -2)}aa`;
     await expect(ring.open({ ...sealed, ciphertext: flipped })).rejects.toThrow(/authentication/);
+  });
+
+  it("fingerprints secrets without echoing the plaintext", async () => {
+    const fp = await fingerprintSecret("sk-or-v1-testkey-123456");
+    expect(fp).toHaveLength(12);
+    expect(fp).not.toContain("sk-or");
+    expect(await fingerprintSecret("sk-or-v1-testkey-123456")).toBe(fp);
   });
 });

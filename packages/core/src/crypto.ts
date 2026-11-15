@@ -128,3 +128,12 @@ export function fromStoredCredential(row: {
   if (!Number.isInteger(keyVersion) || keyVersion < 1) throw new Error("Invalid key version");
   return { ciphertext: row.ciphertext, iv: row.nonce, keyVersion };
 }
+
+/** Short SHA-256 hex prefix for display. Never log or store the raw secret beside this. */
+export async function fingerprintSecret(secret: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(secret));
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("")
+    .slice(0, 12);
+}

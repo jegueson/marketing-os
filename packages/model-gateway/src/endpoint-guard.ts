@@ -125,7 +125,7 @@ function isPrivateOrLoopbackHost(hostname: string): boolean {
 }
 
 function isMetadataHost(hostname: string): boolean {
-  const host = hostname.toLowerCase();
+  const host = hostname.toLowerCase().replace(/\.$/, "");
   if (BLOCKED_HOSTNAMES.has(host)) return true;
   const octets = parseIpv4(host);
   if (octets && octets[0] === 169 && octets[1] === 254) return true;

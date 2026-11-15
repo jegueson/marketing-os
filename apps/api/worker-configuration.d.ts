@@ -4,6 +4,8 @@ interface Env {
   /** Active key version. Defaults to 1. Previous material lives in MOS_DATA_KEY_V1, MOS_DATA_KEY_V2, ... */
   MOS_DATA_KEY_VERSION?: string;
   MOS_DATA_KEY_V1?: string;
+  /** Self-host only: allow private/loopback openai_compatible endpoints (Ollama, LM Studio). */
+  MOS_MODEL_ALLOW_PRIVATE_ENDPOINTS?: string;
   DATABASE_URL?: string;
   SUPABASE_URL?: string;
   SUPABASE_JWT_SECRET?: string;

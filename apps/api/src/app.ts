@@ -19,6 +19,7 @@ import { invitationRoutes } from "./routes/invitations";
 import { consoleRoutes } from "./routes/console";
 import { oauthRoutes } from "./routes/oauth";
 import { syncRoutes } from "./routes/sync";
+import { modelsRoutes } from "./routes/models";
 
 export type { HonoEnv } from "./context";
 
@@ -103,6 +104,7 @@ export function createApp(overrides: Partial<AppDeps> = {}) {
   app.route("/", integrationsRoutes);
   app.route("/", oauthRoutes);
   app.route("/", syncRoutes);
+  app.route("/", modelsRoutes);
   app.route("/", cockpitRoutes);
   app.route("/", onboardingRoutes);
   app.route("/", invitationRoutes);

@@ -35,6 +35,7 @@ export {
 export {
   decryptSecret,
   encryptSecret,
+  fingerprintSecret,
   fromStoredCredential,
   importMasterKey,
   openKeyRing,
