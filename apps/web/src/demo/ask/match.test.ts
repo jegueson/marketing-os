@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ASK_SCRIPTS } from "@/demo/data/ask";
+import { ASK_SCRIPTS } from "../data/ask";
 import { matchScript } from "./match";
 
 const scripts = [
