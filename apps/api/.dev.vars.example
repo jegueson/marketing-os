@@ -19,3 +19,14 @@ TURNSTILE_SECRET_KEY=
 MOS_DATA_KEY=
 # MOS_DATA_KEY_VERSION=1
 # MOS_DATA_KEY_V1=
+# Optional. Shared by GA4 and Google Ads when those connector flags are enabled.
+# GOOGLE_OAUTH_CLIENT_ID=
+# GOOGLE_OAUTH_CLIENT_SECRET=
+# Test-account developer token. Required only when connector.google-ads is enabled.
+# GOOGLE_ADS_DEVELOPER_TOKEN=
+# Optional. Required only when connector.hubspot is enabled.
+# HUBSPOT_CLIENT_ID=
+# HUBSPOT_CLIENT_SECRET=
+# Optional. Required only when connector.meta is enabled. ads_read still needs App Review.
+# META_APP_ID=
+# META_APP_SECRET=

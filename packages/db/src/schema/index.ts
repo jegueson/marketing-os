@@ -7,3 +7,4 @@ export * from "./platform";
 export * from "./metrics";
 export * from "./oauth";
 export * from "./sync";
+export * from "./models";

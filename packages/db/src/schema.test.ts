@@ -3,6 +3,8 @@ import {
   auditEvents,
   connections,
   leads,
+  modelCredentials,
+  tenantModelConfig,
   tenants,
   workspaces,
 } from "./schema";
@@ -14,5 +16,10 @@ describe("schema", () => {
     expect(leads).toBeDefined();
     expect(connections).toBeDefined();
     expect(auditEvents).toBeDefined();
+  });
+
+  it("exports Sprint 3 model credential tables", () => {
+    expect(tenantModelConfig).toBeDefined();
+    expect(modelCredentials).toBeDefined();
   });
 });

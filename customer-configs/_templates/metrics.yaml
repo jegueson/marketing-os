@@ -30,6 +30,16 @@ definitions:
     version: "1"
     label: Google Ads conversions
     unit: count
+  - key: meta.spend
+    source: meta
+    version: "1"
+    label: Meta Ads spend
+    unit: currency
+  - key: meta.impressions
+    source: meta
+    version: "1"
+    label: Meta Ads impressions
+    unit: count
   - key: hubspot.contacts_created
     source: hubspot
     version: "1"

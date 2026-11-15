@@ -1,6 +1,10 @@
 import { and, eq, sql } from "drizzle-orm";
+import { GA4_METRICS } from "@marketing-os/connector-google-analytics";
+import { GOOGLE_ADS_METRICS } from "@marketing-os/connector-google-ads";
+import { HUBSPOT_METRICS } from "@marketing-os/connector-hubspot";
+import { META_METRICS } from "@marketing-os/connector-meta";
 import { ConnectorError, type Connector } from "@marketing-os/connector-sdk";
-import { assessDataHealth, planBackfillWindows, planSyncJobs } from "@marketing-os/core";
+import { assessDataHealth, planBackfillWindows, planSyncJobs, type KeyRing } from "@marketing-os/core";
 import {
   connections,
   connectors,
@@ -14,6 +18,7 @@ import {
   type Database,
 } from "@marketing-os/db";
 import { systemContext } from "../context";
+import { loadConnectionCredentials } from "../lib/credentials";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MOCK_METRICS = [
@@ -25,6 +30,19 @@ const MOCK_METRICS = [
   "google_ads.conversions",
   "hubspot.deals_qualified",
 ] as const;
+
+function metricsFor(slug: string): readonly string[] {
+  if (slug === "google-analytics") return GA4_METRICS;
+  if (slug === "google-ads") return GOOGLE_ADS_METRICS;
+  if (slug === "hubspot") return HUBSPOT_METRICS;
+  if (slug === "meta") return META_METRICS;
+  return MOCK_METRICS;
+}
+
+function credentialsFor(slug: string, stored: Record<string, string>, developerToken?: string): Record<string, string> {
+  if (slug !== "google-ads" || !developerToken) return stored;
+  return { ...stored, developer_token: developerToken };
+}
 
 export type SyncMessage = {
   runId: number;
@@ -131,6 +149,8 @@ export async function consumeSyncMessage(
   db: Database,
   message: SyncMessage,
   registry: ReadonlyMap<string, Connector>,
+  ring: KeyRing | null = null,
+  developerToken?: string,
 ): Promise<"ack" | "retry"> {
   let outcome: "ack" | "retry" = "ack";
   await withContext(db, { tenantId: message.tenantId, userId: null, staff: false }, async (tx) => {
@@ -159,11 +179,22 @@ export async function consumeSyncMessage(
       return;
     }
     const dimensionHash = scopes.map((scope) => scope.resourceId).sort().join("|");
+    const metrics = metricsFor(connection.slug);
     try {
-      for (const metric of MOCK_METRICS) {
+      const credentials = credentialsFor(
+        connection.slug,
+        await loadConnectionCredentials(tx, run.connectionId, ring),
+        developerToken,
+      );
+      for (const metric of metrics) {
         const [result] = await connector.queryMetrics(
-          { tenantId: message.tenantId, workspaceId: message.workspaceId, connectionId: message.connectionId, credentials: {} },
-          { metric, dimensions: [], from: new Date(run.windowStart).toISOString(), to: new Date(run.windowEnd).toISOString() },
+          { tenantId: message.tenantId, workspaceId: message.workspaceId, connectionId: message.connectionId, credentials },
+          {
+            metric,
+            dimensions: scopes.map((scope) => scope.resourceId),
+            from: new Date(run.windowStart).toISOString(),
+            to: new Date(run.windowEnd).toISOString(),
+          },
         );
         if (!result?.lineage.definitionVersion) throw new Error("Metric result has no definition version");
         await tx
@@ -197,7 +228,7 @@ export async function consumeSyncMessage(
         lastSuccessAt: new Date().toISOString(),
         lastErrorAt: null,
         staleAfterSeconds: 24 * 60 * 60,
-        recordCount: MOCK_METRICS.length,
+        recordCount: metrics.length,
         schemaState: "ok",
         issues: [],
       });
@@ -207,7 +238,7 @@ export async function consumeSyncMessage(
         status: health.status,
         freshnessAt: new Date(),
         schemaState: "ok",
-        recordCount: String(MOCK_METRICS.length),
+        recordCount: String(metrics.length),
         issues: health.issues,
         checkedAt: new Date(),
       });
@@ -261,9 +292,11 @@ export async function consumeSyncBatch(
   db: Database,
   messages: readonly { body: SyncMessage; ack(): void; retry(): void }[],
   registry: ReadonlyMap<string, Connector>,
+  ring: KeyRing | null = null,
+  developerToken?: string,
 ): Promise<void> {
   for (const message of messages) {
-    const outcome = await consumeSyncMessage(db, message.body, registry);
+    const outcome = await consumeSyncMessage(db, message.body, registry, ring, developerToken);
     if (outcome === "retry") message.retry();
     else message.ack();
   }

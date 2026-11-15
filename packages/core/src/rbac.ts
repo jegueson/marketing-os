@@ -21,6 +21,9 @@ export const permissions = [
   "onboarding:manage",
   "users:invite",
   "approvals:decide",
+  "ask:use",
+  "models:manage",
+  "usage:read",
 ] as const;
 
 export type Permission = (typeof permissions)[number];
@@ -39,6 +42,7 @@ const rolePermissionMatrix: Record<Role, readonly Permission[]> = {
     "audit:read",
     "onboarding:manage",
     "users:invite",
+    "usage:read",
   ],
 
   ai_specialist: [
@@ -49,6 +53,7 @@ const rolePermissionMatrix: Record<Role, readonly Permission[]> = {
     "cockpit:view",
     "audit:read",
     "onboarding:manage",
+    "usage:read",
   ],
   customer_admin: [
     "integrations:manage",
@@ -57,8 +62,11 @@ const rolePermissionMatrix: Record<Role, readonly Permission[]> = {
     "onboarding:manage",
     "users:invite",
     "approvals:decide",
+    "ask:use",
+    "models:manage",
+    "usage:read",
   ],
-  customer_user: ["integrations:read", "cockpit:view", "approvals:decide"],
+  customer_user: ["integrations:read", "cockpit:view", "approvals:decide", "ask:use"],
 };
 
 export function permissionsForRole(role: Role): readonly Permission[] {

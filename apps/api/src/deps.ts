@@ -6,10 +6,15 @@ import {
 } from "@marketing-os/core";
 import { createDb, type DbHandle } from "@marketing-os/db";
 import type { Connector } from "@marketing-os/connector-sdk";
+import { ga4Connector } from "@marketing-os/connector-google-analytics";
+import { googleAdsConnector } from "@marketing-os/connector-google-ads";
+import { hubspotConnector } from "@marketing-os/connector-hubspot";
+import { metaConnector } from "@marketing-os/connector-meta";
 import { mockConnector } from "@marketing-os/connector-mock";
 import type { AppEnv } from "./env";
 import type { OAuthProvider } from "./lib/mock-oauth";
 import { createMockOAuthProvider } from "./lib/mock-oauth";
+import { createModelGateway, type ModelGatewayFactory } from "./lib/model-gateway";
 import type { SyncProducer } from "./sync/engine";
 import { noopProvisioningHooks, type ProvisioningHooks } from "./services/provisioning";
 import {
@@ -34,6 +39,8 @@ export type AppDeps = {
   /** Present when the mos-sync queue binding is configured. */
   syncQueue?: SyncProducer;
   provisioningHooks: ProvisioningHooks;
+  /** Builds a model gateway from a resolved credential. Tests inject FakeGateway. */
+  createModelGateway: ModelGatewayFactory;
 };
 
 const PUBLIC_LEADS_PER_MINUTE = 5;
@@ -58,7 +65,14 @@ export const defaultDeps: AppDeps = {
     if (env.turnstileSecret) return new TurnstileVerifier(env.turnstileSecret);
     return new DisabledCaptcha(env.deploymentMode === "cloud" ? "not_configured" : "ok");
   },
-  connectors: new Map<string, Connector>([["mock", mockConnector]]),
+  connectors: new Map<string, Connector>([
+    ["mock", mockConnector],
+    ["google-analytics", ga4Connector],
+    ["google-ads", googleAdsConnector],
+    ["hubspot", hubspotConnector],
+    ["meta", metaConnector],
+  ]),
   oauthProviders: new Map<string, OAuthProvider>([["mock", createMockOAuthProvider()]]),
   provisioningHooks: noopProvisioningHooks,
+  createModelGateway,
 };

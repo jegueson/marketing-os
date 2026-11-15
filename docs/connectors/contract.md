@@ -1,3 +1,3 @@
 # Connector contract
 
-See [authoring.md](authoring.md). The TypeScript contract kit lives in `@marketing-os/connector-sdk` as `runConnectorContract`.
+The rules for a new read connector are in [authoring.md](authoring.md). The TypeScript contract kit is `runConnectorContract` from `@marketing-os/connector-sdk`.

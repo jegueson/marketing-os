@@ -6,6 +6,10 @@ import { requireWorkspace } from "../auth/access";
 import { run, tenantContext, type AppContext } from "../context";
 import { keyRingFromConfig, loadConnectionCredentials } from "../lib/credentials";
 import { parseUuidParam } from "../lib/http";
+import { ga4ProviderFromEnv } from "../lib/ga4-oauth";
+import { googleAdsProviderFromEnv } from "../lib/google-ads-oauth";
+import { hubspotProviderFromEnv } from "../lib/hubspot-oauth";
+import { metaProviderFromEnv } from "../lib/meta-oauth";
 import { beginOAuth, completeOAuth, portalRedirect, refreshOAuth } from "../lib/oauth";
 import {
   apiSuccessSchema,
@@ -77,10 +81,31 @@ function callbackUrl(c: AppContext): string {
   return new URL("/api/v1/integrations/oauth/callback", c.req.url).toString();
 }
 
-async function providerFor(c: AppContext, slug: string) {
-  const provider = c.get("deps").oauthProviders.get(slug);
-  if (!provider) throw new ValidationError(`Connector ${slug} does not support OAuth`);
-  return provider;
+function providerFor(c: AppContext, slug: string) {
+  const configured = c.get("deps").oauthProviders.get(slug);
+  if (configured) return configured;
+  if (slug === "google-analytics") {
+    const provider = ga4ProviderFromEnv(c.env);
+    if (!provider) throw new ValidationError("Google OAuth client is not configured");
+    return provider;
+  }
+  if (slug === "google-ads") {
+    if (!c.env.GOOGLE_ADS_DEVELOPER_TOKEN) throw new ValidationError("Google Ads developer token is not configured");
+    const provider = googleAdsProviderFromEnv(c.env);
+    if (!provider) throw new ValidationError("Google OAuth client is not configured");
+    return provider;
+  }
+  if (slug === "hubspot") {
+    const provider = hubspotProviderFromEnv(c.env);
+    if (!provider) throw new ValidationError("HubSpot OAuth client is not configured");
+    return provider;
+  }
+  if (slug === "meta") {
+    const provider = metaProviderFromEnv(c.env);
+    if (!provider) throw new ValidationError("Meta app is not configured");
+    return provider;
+  }
+  throw new ValidationError(`Connector ${slug} does not support OAuth`);
 }
 
 async function requireRing(c: AppContext) {
@@ -106,7 +131,7 @@ oauthRoutes.openapi(startRoute, async (c) => {
       connectionId: id,
       connectorSlug: connection.slug,
       redirectUri: callbackUrl(c),
-      provider: await providerFor(c, connection.slug),
+      provider: providerFor(c, connection.slug),
     });
   });
   return c.json(ok(started), 200);
@@ -130,7 +155,7 @@ oauthRoutes.openapi(refreshRoute, async (c) => {
       connectionId: id,
       tenantId: access.tenantId,
       workspaceId,
-      provider: await providerFor(c, connection.slug),
+      provider: providerFor(c, connection.slug),
       ring,
       refreshToken: credentials.refresh_token,
       actorId: c.get("principal").userId,
@@ -152,11 +177,7 @@ oauthRoutes.openapi(callbackRoute, async (c) => {
   const done = await completeOAuth(c.get("db")(), {
     state: query.state,
     code: query.code,
-    providerForSlug: (slug) => {
-      const provider = c.get("deps").oauthProviders.get(slug);
-      if (!provider) throw new ValidationError(`Connector ${slug} does not support OAuth`);
-      return provider;
-    },
+    providerForSlug: (slug) => providerFor(c, slug),
     ring,
     appOrigin,
   });

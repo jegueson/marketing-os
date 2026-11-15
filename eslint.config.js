@@ -22,4 +22,31 @@ export default tseslint.config(
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
+  {
+    rules: {
+      // Intentional unused bindings: interface params, omit-via-destructure.
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+        },
+      ],
+    },
+  },
+  {
+    // Playwright demo scripts: Node host + browser callbacks in page.evaluate.
+    files: ["e2e/**/*.{js,mjs,cjs}"],
+    languageOptions: {
+      globals: {
+        process: "readonly",
+        console: "readonly",
+        document: "readonly",
+        window: "readonly",
+        setTimeout: "readonly",
+        URL: "readonly",
+      },
+    },
+  },
 );

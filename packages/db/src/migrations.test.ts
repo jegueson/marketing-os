@@ -115,7 +115,13 @@ describe("migrations", () => {
   it("seeds the mock connector and platform flags", async () => {
     const [mock] = await rows<{ slug: string }>("select slug from connectors where slug = 'mock'");
     expect(mock?.slug).toBe("mock");
-    const flags = await rows<{ key: string }>("select key from feature_flags");
+    const flags = await rows<{ key: string; is_enabled: boolean }>(
+      "select key, is_enabled from feature_flags",
+    );
     expect(flags.length).toBeGreaterThan(0);
+    expect(flags.find((f) => f.key === "ask_marketing")).toEqual({
+      key: "ask_marketing",
+      is_enabled: false,
+    });
   });
 });

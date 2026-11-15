@@ -10,15 +10,24 @@ import {
   toolSpecSchema,
 } from "./models";
 
-const ctx = {
-  tenantId: "11111111-1111-1111-1111-111111111111",
-  workspaceId: "22222222-2222-2222-2222-222222222222",
-  connectionId: "33333333-3333-3333-3333-333333333333",
-  credentials: {},
+export type ConnectorContractOptions = {
+  /** Metric the kit queries. Defaults to the mock probe metric. */
+  metric?: string;
+  dimensions?: string[];
+  credentials?: Record<string, string>;
 };
 
 /** Contract kit: every connector must pass these checks. */
-export async function runConnectorContract(connector: Connector): Promise<void> {
+export async function runConnectorContract(
+  connector: Connector,
+  options: ConnectorContractOptions = {},
+): Promise<void> {
+  const ctx = {
+    tenantId: "11111111-1111-1111-1111-111111111111",
+    workspaceId: "22222222-2222-2222-2222-222222222222",
+    connectionId: "33333333-3333-3333-3333-333333333333",
+    credentials: options.credentials ?? {},
+  };
   const meta = connectorMetadataSchema.parse(connector.metadata());
   expect(meta.slug.length).toBeGreaterThan(0);
   authSpecSchema.parse(connector.authSpec());
@@ -36,8 +45,8 @@ export async function runConnectorContract(connector: Connector): Promise<void> 
   const from = new Date(now.getTime() - 86_400_000).toISOString();
   const to = now.toISOString();
   const metrics = await connector.queryMetrics(ctx, {
-    metric: "impressions",
-    dimensions: [],
+    metric: options.metric ?? "impressions",
+    dimensions: options.dimensions ?? [],
     from,
     to,
   });

@@ -25,10 +25,17 @@ export {
   leadStatuses,
   type LeadStatus,
 } from "./lead-state";
-export { isEnabled, type FlagContext } from "./flags";
+export {
+  isEnabled,
+  knownFlags,
+  platformFlagDefault,
+  type FlagContext,
+  type KnownFlag,
+} from "./flags";
 export {
   decryptSecret,
   encryptSecret,
+  fingerprintSecret,
   fromStoredCredential,
   importMasterKey,
   openKeyRing,

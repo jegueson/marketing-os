@@ -149,6 +149,19 @@ integrationsRoutes.use(`${base}/integrations`, requirePrincipal);
 integrationsRoutes.use(`${base}/connections`, requirePrincipal);
 integrationsRoutes.use(`${base}/connections/*`, requirePrincipal);
 
+function connectorEnabled(flags: ReadonlyMap<string, boolean>, slug: string): boolean {
+  const key = `connector.${slug}`;
+  return !flags.has(key) || flags.get(key) === true;
+}
+
+async function assertConnectorEnabled(tx: Database, slug: string): Promise<void> {
+  const [flag] = await tx
+    .select({ isEnabled: featureFlags.isEnabled })
+    .from(featureFlags)
+    .where(eq(featureFlags.key, `connector.${slug}`));
+  if (flag && !flag.isEnabled) throw new ValidationError(`${slug} is not enabled`);
+}
+
 function connectorFor(c: AppContext, slug: string): Connector {
   const connector = c.get("deps").connectors.get(slug);
   if (!connector) throw new ValidationError(`Connector ${slug} is not available`);
@@ -181,13 +194,20 @@ async function loadConnection(tx: Database, workspaceId: string, id: string): Pr
   return row;
 }
 
-function connectorContext(connection: LoadedConnection, credentials: Record<string, string>): ConnectorContext {
+function connectorContext(c: AppContext, connection: LoadedConnection, credentials: Record<string, string>): ConnectorContext {
   return {
     tenantId: connection.tenantId,
     workspaceId: connection.workspaceId,
     connectionId: connection.id,
-    credentials,
+    credentials: withDeveloperToken(c, connection.slug, credentials),
   };
+}
+
+function withDeveloperToken(c: AppContext, slug: string, credentials: Record<string, string>): Record<string, string> {
+  if (slug !== "google-ads") return credentials;
+  const developerToken = c.env.GOOGLE_ADS_DEVELOPER_TOKEN;
+  if (!developerToken) throw new ValidationError("Google Ads developer token is not configured");
+  return { ...credentials, developer_token: developerToken };
 }
 
 async function credentialsFor(c: AppContext, tx: Database, connectionId: string): Promise<Record<string, string>> {
@@ -211,10 +231,10 @@ integrationsRoutes.openapi(listIntegrationsRoute, async (c) => {
     flags: await tx.select({ key: featureFlags.key, isEnabled: featureFlags.isEnabled }).from(featureFlags),
   }));
   const registry = c.get("deps").connectors;
-  const available = rows
-    .filter((row) => registry.has(row.slug))
-    .map((row) => ({ slug: row.slug, name: row.name, category: row.category, status: "available" as const }));
   const flagged = new Map(flags.map((flag) => [flag.key, flag.isEnabled]));
+  const available = rows
+    .filter((row) => registry.has(row.slug) && connectorEnabled(flagged, row.slug))
+    .map((row) => ({ slug: row.slug, name: row.name, category: row.category, status: "available" as const }));
   const upcoming = comingSoon
     .filter((entry) => !available.some((a) => a.slug === entry.slug))
     .map((entry) => ({
@@ -249,6 +269,7 @@ integrationsRoutes.openapi(createConnectionRoute, async (c) => {
   const input = await parseBody(c, connectionCreateSchema);
   connectorFor(c, input.connectorSlug);
   const created = await run(c, tenantContext(c), async (tx) => {
+    await assertConnectorEnabled(tx, input.connectorSlug);
     const [connector] = await tx
       .select({ id: connectors.id })
       .from(connectors)
@@ -288,7 +309,7 @@ integrationsRoutes.openapi(listResourcesRoute, async (c) => {
         .from(dataScopes)
         .where(and(eq(dataScopes.connectionId, id), eq(dataScopes.isActive, true))),
     }));
-    const resources = await connectorFor(c, connection.slug).listResources(connectorContext(connection, credentials));
+    const resources = await connectorFor(c, connection.slug).listResources(connectorContext(c, connection, credentials));
     const chosen = new Set(selected.map((s) => `${s.resourceType}:${s.resourceId}`));
     return c.json(
       ok(
@@ -313,7 +334,7 @@ integrationsRoutes.openapi(selectScopesRoute, async (c) => {
     const result = await run(c, tenantContext(c), async (tx) => {
       const connection = await loadConnection(tx, workspaceId, id);
       const credentials = await credentialsFor(c, tx, id);
-      const offered = await connectorFor(c, connection.slug).listResources(connectorContext(connection, credentials));
+      const offered = await connectorFor(c, connection.slug).listResources(connectorContext(c, connection, credentials));
       const offeredKeys = new Set(offered.map((r) => `${r.kind}:${r.name}`));
       const unknown = input.resources.filter((r) => !offeredKeys.has(`${r.resourceType}:${r.resourceId}`));
       if (unknown.length) {
@@ -371,7 +392,7 @@ integrationsRoutes.openapi(testConnectionRoute, async (c) => {
       } else {
         try {
           const credentials = await credentialsFor(c, tx, id);
-          const health = await connectorFor(c, connection.slug).health(connectorContext(connection, credentials));
+          const health = await connectorFor(c, connection.slug).health(connectorContext(c, connection, credentials));
           result =
             health.status === "error"
               ? {

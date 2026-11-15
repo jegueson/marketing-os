@@ -2,6 +2,7 @@ import { createDb } from "@marketing-os/db";
 import { createApp } from "./app";
 import { defaultDeps } from "./deps";
 import { loadEnv } from "./env";
+import { keyRingFromConfig } from "./lib/credentials";
 import { consumeBatch } from "./events/consumer";
 import { relayOutbox, type OutboxMessage } from "./events/relay";
 import { consumeSyncBatch, enqueueDueSyncs, type SyncMessage } from "./sync/engine";
@@ -28,13 +29,16 @@ export default {
   },
 
   async queue(batch, env, ctx) {
-    const handle = createDb(loadEnv(env).databaseUrl);
+    const config = loadEnv(env);
+    const handle = createDb(config.databaseUrl);
     try {
       if (batch.queue === "mos-sync") {
         await consumeSyncBatch(
           handle.db,
           batch.messages as readonly { body: SyncMessage; ack(): void; retry(): void }[],
           defaultDeps.connectors,
+          await keyRingFromConfig(config),
+          env.GOOGLE_ADS_DEVELOPER_TOKEN,
         );
       } else {
         await consumeBatch(handle.db, batch.messages as Parameters<typeof consumeBatch>[1]);
