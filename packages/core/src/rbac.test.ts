@@ -20,11 +20,38 @@ describe("rbac", () => {
   it("covers every role and permission entry", () => {
     expect(roles.length).toBeGreaterThanOrEqual(5);
     expect(permissions).toContain("audit:read");
+    expect(permissions).toEqual(
+      expect.arrayContaining(["ask:use", "models:manage", "usage:read"]),
+    );
   });
 
   it("throws when asserting a missing permission", () => {
     expect(() => assertPermission("customer_user", "tenants:provision")).toThrow(
       /lacks permission/,
     );
+  });
+
+  it("grants ask:use to customers and platform admin, not support staff", () => {
+    expect(roleHasPermission("customer_admin", "ask:use")).toBe(true);
+    expect(roleHasPermission("customer_user", "ask:use")).toBe(true);
+    expect(roleHasPermission("platform_admin", "ask:use")).toBe(true);
+    expect(roleHasPermission("success_manager", "ask:use")).toBe(false);
+    expect(roleHasPermission("ai_specialist", "ask:use")).toBe(false);
+  });
+
+  it("grants models:manage only to customer_admin and platform_admin", () => {
+    expect(roleHasPermission("customer_admin", "models:manage")).toBe(true);
+    expect(roleHasPermission("platform_admin", "models:manage")).toBe(true);
+    expect(roleHasPermission("customer_user", "models:manage")).toBe(false);
+    expect(roleHasPermission("success_manager", "models:manage")).toBe(false);
+    expect(roleHasPermission("ai_specialist", "models:manage")).toBe(false);
+  });
+
+  it("grants usage:read to admins, SM, and specialists", () => {
+    expect(roleHasPermission("customer_admin", "usage:read")).toBe(true);
+    expect(roleHasPermission("success_manager", "usage:read")).toBe(true);
+    expect(roleHasPermission("ai_specialist", "usage:read")).toBe(true);
+    expect(roleHasPermission("platform_admin", "usage:read")).toBe(true);
+    expect(roleHasPermission("customer_user", "usage:read")).toBe(false);
   });
 });

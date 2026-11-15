@@ -129,6 +129,7 @@ describe("authentication", () => {
     const res = await h.call<Record<string, boolean>>("/api/v1/me/features", { token: user.token });
     expect(res.body.data["nav.leads_admin"]).toBe(false);
     expect(res.body.data["cockpit.performance"]).toBe(true);
+    expect(res.body.data["ask_marketing"]).toBe(false);
   });
 
   it("records a login audit event", async () => {

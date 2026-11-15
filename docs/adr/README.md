@@ -27,5 +27,7 @@ Decisions for Marketing OS. Format follows Michael Nygard's lightweight ADR. Sta
 | [0021](0021-sync-queue.md) | Sync jobs use their own queue | accepted |
 | [0022](0022-external-automation-platforms.md) | Integrate with n8n, Zapier and Make; do not embed them | accepted |
 | [0023](0023-creative-tools-as-connectors.md) | Creative generation tools are connectors | accepted |
+| [0024](0024-ask-pipeline-contract.md) | Ask Marketing pipeline contract | accepted |
+| [0025](0025-usage-ledger-budgets-prompts.md) | Usage ledger, budget caps and versioned prompts | accepted |
 
 Template for new records: [template.md](template.md).
