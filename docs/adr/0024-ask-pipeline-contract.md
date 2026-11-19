@@ -54,4 +54,14 @@ Window coverage assumptions (which presets can be answered from sync windows) ar
 
 ### Risks
 
-- Partial sync windows may force coverage warnings or refusals for short presets until S3-T16 confirms window size.
+- Partial sync windows may force coverage warnings. A stored value is one aggregate for its whole window, so Ask counts it only when that window lies inside the preset (see the amendment below).
+
+## Amendment (2026-11-19): sync windows and preset coverage
+
+Verified from `planBackfillWindows` in `packages/core/src/scheduler.ts` and `createSyncRuns` in `apps/api/src/sync/engine.ts`.
+
+- The first sync is a 90-day backfill. It ends at UTC midnight of the current UTC date and is split into contiguous 30-day chunks, oldest first. `end` is exclusive.
+- An incremental sync is not a fixed number of days. It is one window from the stored cursor to `now`, and that connection is not queued again until a day after the cursor.
+- Each `metric_values` row is one number for its whole window. The engine does not store a daily series.
+
+Ask presets (`last_7_days`, `last_30_days`, `this_month`, `last_month`, `previous_period`) are resolved in UTC and also end at UTC midnight, so the current partial day is excluded. `previous_period` is the equal-length window immediately before the primary range. A stored window counts toward coverage only when it lies entirely inside the preset. Contained windows that miss some UTC days are `partial`. A window that merely overlaps the preset is `no_data`, because its aggregate cannot be sliced. On the backfill grid, `last_30_days` matches the newest 30-day chunk (for example, 2026-03-02 through 2026-04-01 when the sync clock is 2026-04-01). `last_7_days` and calendar months do not match those chunks in general. A range that extends past UTC midnight of today is rejected.

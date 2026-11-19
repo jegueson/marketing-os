@@ -35,6 +35,7 @@ A mock sync needs a signed-in workspace, one selected scope, and `MOS_DATA_KEY`.
 - Queues: `mos-outbox` and `mos-outbox-dlq`; `mos-sync` and `mos-sync-dlq` (dead letters after 5 retries)
 - Cron: `*/5 * * * *` on the API
 - Rate limit: `PUBLIC_LEADS_RATE_LIMITER` (namespace `1001`, 5 requests / 60 s)
+- Rate limit: `ASK_RATE_LIMITER` (namespace `1002`, 30 requests / 60 s per user)
 - R2: `mos-assets`, `mos-assets-preview`
 - Hyperdrive: `mos-supabase-staging` (`7e654828f81d45acb604296b2cfcc34e`) → `db.ilgxtbjjawnkvybvcsqm.supabase.co`
 - DB role: `mos_hyperdrive` (LOGIN, no BYPASSRLS, member of `app_api`)
@@ -44,7 +45,7 @@ A mock sync needs a signed-in workspace, one selected scope, and `MOS_DATA_KEY`.
 
 API:
 
-- `HYPERDRIVE`, `ASSETS_BUCKET`, `OUTBOX_QUEUE`, `SYNC_QUEUE`, `PUBLIC_LEADS_RATE_LIMITER`
+- `HYPERDRIVE`, `ASSETS_BUCKET`, `OUTBOX_QUEUE`, `SYNC_QUEUE`, `PUBLIC_LEADS_RATE_LIMITER`, `ASK_RATE_LIMITER`
 - `SUPABASE_URL`, `SUPABASE_JWKS_URL` (ES256 signing keys), `APP_ORIGIN`, `MOS_DEPLOYMENT_MODE=cloud`
 - Secret: `MOS_DATA_KEY` (set 2026-11-13). The only copy outside Cloudflare is `.mos/staging-mos-data-key` on the machine that created it. Copy that file into the password manager and do not commit it. Losing it makes stored connector tokens unreadable.
 

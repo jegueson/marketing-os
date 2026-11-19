@@ -27,6 +27,8 @@ MOS_DATA_KEY=
 # Optional. Required only when connector.hubspot is enabled.
 # HUBSPOT_CLIENT_ID=
 # HUBSPOT_CLIENT_SECRET=
+# Self-host only. Set to 1 to log model prompt bodies. Ignored in cloud mode.
+# MOS_MODEL_DEBUG=
 # Optional. Required only when connector.meta is enabled. ads_read still needs App Review.
 # META_APP_ID=
 # META_APP_SECRET=

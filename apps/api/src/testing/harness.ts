@@ -42,6 +42,7 @@ export async function createHarness(
     openDatabase: () => ({ db: testDb.db, close: async () => {} }),
     emailSender: () => emails,
     leadRateLimiter: () => new MemoryRateLimiter(1000, 60_000),
+    askRateLimiter: () => new MemoryRateLimiter(1000, 60_000),
     captcha: () => new DisabledCaptcha("ok"),
     ...overrides,
   });

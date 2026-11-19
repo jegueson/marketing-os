@@ -193,3 +193,16 @@ export function parseMetricsYaml(source: string): MetricsDocument {
 export function loadMetricsYaml(path: string): MetricsDocument {
   return parseMetricsYaml(readFileSync(path, "utf8"));
 }
+
+export {
+  SYNC_BACKFILL_CHUNK_DAYS,
+  SYNC_BACKFILL_DAYS,
+  coverRange,
+  resolvePreset,
+  utcMidnight,
+  MetricRangeError,
+  type AskRangePreset,
+  type CoverageStatus,
+  type RangeCoverage,
+  type UtcRange,
+} from "./windows";

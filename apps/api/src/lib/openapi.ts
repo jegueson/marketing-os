@@ -44,7 +44,7 @@ export function jsonContent<T extends z.ZodTypeAny>(schema: T, description: stri
   };
 }
 
-type ErrorStatus = 400 | 401 | 403 | 404 | 409 | 422 | 429 | 500 | 503;
+type ErrorStatus = 400 | 401 | 402 | 403 | 404 | 409 | 422 | 429 | 500 | 503;
 
 /** Keeps the status literals in the type so handlers may return `c.json(fail(...), status)`. */
 export function errorResponses<const S extends readonly ErrorStatus[]>(
@@ -53,6 +53,7 @@ export function errorResponses<const S extends readonly ErrorStatus[]>(
   const descriptions: Record<number, string> = {
     400: "Bad request",
     401: "Unauthorized",
+    402: "Budget exceeded",
     403: "Forbidden",
     404: "Not found",
     409: "Conflict",

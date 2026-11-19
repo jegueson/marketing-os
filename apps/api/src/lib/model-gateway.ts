@@ -3,6 +3,7 @@ import type { ResolvedModelCredential } from "@marketing-os/db";
 import {
   AnthropicGateway,
   assertSafeModelEndpoint,
+  BUDGET_EXCEEDED_HTTP_STATUS,
   ModelGatewayError,
   OpenAICompatibleGateway,
   OpenAIGateway,
@@ -47,13 +48,14 @@ export function createModelGateway(
 ): ModelGateway {
   const mode = env.deploymentMode;
   const allowPrivate = allowPrivateEndpoints(bindings);
+  const modelDebug = bindings.MOS_MODEL_DEBUG === "1";
   switch (credential.provider) {
     case "openrouter":
-      return new OpenRouterGateway({ apiKey: credential.apiKey });
+      return new OpenRouterGateway({ apiKey: credential.apiKey, deploymentMode: mode, modelDebug });
     case "openai":
-      return new OpenAIGateway({ apiKey: credential.apiKey, deploymentMode: mode });
+      return new OpenAIGateway({ apiKey: credential.apiKey, deploymentMode: mode, modelDebug });
     case "anthropic":
-      return new AnthropicGateway({ apiKey: credential.apiKey, deploymentMode: mode });
+      return new AnthropicGateway({ apiKey: credential.apiKey, deploymentMode: mode, modelDebug });
     case "openai_compatible": {
       if (!credential.baseUrl) {
         throw new ValidationError("openai_compatible requires a base URL");
@@ -64,6 +66,7 @@ export function createModelGateway(
         baseUrl: url.toString().replace(/\/$/, ""),
         deploymentMode: mode,
         allowPrivateEndpoints: allowPrivate,
+        modelDebug,
       });
     }
     default:
@@ -73,6 +76,9 @@ export function createModelGateway(
 
 export function mapGatewayError(err: unknown): never {
   if (err instanceof ModelGatewayError) {
+    if (err.code === "budget_exceeded") {
+      throw new AppError("budget_exceeded", err.message, BUDGET_EXCEEDED_HTTP_STATUS);
+    }
     if (err.code === "auth_failed") {
       throw new AppError("invalid_key", "Model provider rejected the API key", 422);
     }

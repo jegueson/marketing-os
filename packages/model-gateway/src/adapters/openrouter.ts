@@ -1,5 +1,6 @@
 import { ModelGatewayError } from "../errors";
 import { gatewayFetch, mapProviderErrorCode, readJson, type GatewayFetch } from "../http";
+import type { GatewayLogContext } from "../log";
 import { estimateCostFromPricing } from "../pricing";
 import { readSseData } from "../sse";
 import type {
@@ -25,6 +26,10 @@ export type OpenRouterGatewayOptions = {
   /** Optional OpenRouter app attribution headers. */
   referer?: string;
   title?: string;
+  /** Defaults to cloud, which never logs prompt bodies. */
+  deploymentMode?: GatewayLogContext["deploymentMode"];
+  /** Honored only when `deploymentMode` is not `cloud`. Set from `MOS_MODEL_DEBUG=1`. */
+  modelDebug?: boolean;
 };
 
 type OpenRouterModel = {
@@ -155,6 +160,7 @@ export class OpenRouterGateway implements ModelGateway {
   private readonly timeoutMs: number;
   private readonly referer: string | undefined;
   private readonly title: string | undefined;
+  private readonly logContext: GatewayLogContext;
   private modelCache: OpenRouterModel[] | null = null;
 
   constructor(options: OpenRouterGatewayOptions) {
@@ -167,6 +173,11 @@ export class OpenRouterGateway implements ModelGateway {
     this.timeoutMs = options.timeoutMs ?? 60_000;
     this.referer = options.referer;
     this.title = options.title;
+    this.logContext = {
+      provider: this.provider,
+      deploymentMode: options.deploymentMode ?? "cloud",
+      modelDebug: options.modelDebug === true,
+    };
   }
 
   async listModels(): Promise<ModelInfo[]> {
@@ -315,6 +326,7 @@ export class OpenRouterGateway implements ModelGateway {
       timeoutMs: this.timeoutMs,
       headers: this.extraHeaders(),
       holdUntilRelease: true,
+      log: this.logContext,
     });
     try {
       const payload = await readJson<ModelsResponse>(response, this.apiKey);
@@ -363,6 +375,7 @@ export class OpenRouterGateway implements ModelGateway {
         ...this.extraHeaders(),
       },
       body: JSON.stringify(body),
+      log: this.logContext,
     });
   }
 }

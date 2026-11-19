@@ -18,6 +18,8 @@ export default defineConfig({
     jsx: "automatic",
   },
   test: {
+    // Harness tests boot PGlite inside `it`. On CI they sit at 4–5s; the 5s default flakes.
+    testTimeout: 20_000,
     include: [
       "packages/**/*.test.ts",
       "packages/**/*.test.tsx",

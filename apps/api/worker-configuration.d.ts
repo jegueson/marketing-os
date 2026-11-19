@@ -6,6 +6,8 @@ interface Env {
   MOS_DATA_KEY_V1?: string;
   /** Self-host only: allow private/loopback openai_compatible endpoints (Ollama, LM Studio). */
   MOS_MODEL_ALLOW_PRIVATE_ENDPOINTS?: string;
+  /** Self-host only. `1` logs prompt bodies. Ignored when MOS_DEPLOYMENT_MODE is cloud. */
+  MOS_MODEL_DEBUG?: string;
   DATABASE_URL?: string;
   SUPABASE_URL?: string;
   SUPABASE_JWT_SECRET?: string;
@@ -30,5 +32,7 @@ interface Env {
   SYNC_QUEUE?: Queue;
   ASSETS_BUCKET?: R2Bucket;
   PUBLIC_LEADS_RATE_LIMITER?: RateLimit;
+  /** Per-user limit for Ask message posts. */
+  ASK_RATE_LIMITER?: RateLimit;
   EMAIL?: import("@marketing-os/core").CloudflareSendEmailBinding;
 }

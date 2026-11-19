@@ -31,6 +31,20 @@ export async function withContext<T>(
   });
 }
 
+/** Same tenant context as {@link withContext}, but INSERT/UPDATE/DELETE are rejected. */
+export async function withReadOnly<T>(
+  db: Database,
+  ctx: DbContext,
+  fn: (tx: Database) => Promise<T>,
+): Promise<T> {
+  return db.transaction(async (tx) => {
+    await tx.execute(sql`set transaction read only`);
+    await tx.execute(sql`set local role app_api`);
+    await applySettings(tx, ctx);
+    return fn(tx);
+  });
+}
+
 /**
  * Raw query that returns rows on both drivers: postgres-js resolves to an array,
  * PGlite resolves to `{ rows }`.

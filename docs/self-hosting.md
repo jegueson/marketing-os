@@ -28,10 +28,12 @@ shared secret, so leave `SUPABASE_JWKS_URL` empty) and
 ### First-run setup
 
 `mos setup` creates the platform admin in Supabase Auth, the tenant, the
-default workspace and the admin membership. It stores the model API key
-encrypted under `MOS_DATA_KEY` in `apps/cli/.mos/setup.json`. Secrets come from
+default workspace and the admin membership. It seals the model API key into
+Postgres (`model_credentials`) under `MOS_DATA_KEY`. `.mos/setup.json` keeps
+only non-secret metadata (tenant ids, provider, fingerprint). Secrets come from
 environment variables only, so they never show up in shell history as
-arguments.
+arguments. Legacy installs that still have a `modelApiKey` blob in
+`.mos/setup.json` can move it with `mos models migrate`.
 
 ```bash
 eval "$(supabase status -o env | grep -E '^(API_URL|DB_URL|SERVICE_ROLE_KEY)=')"

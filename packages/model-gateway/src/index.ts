@@ -1,5 +1,25 @@
 export { ModelGatewayError, modelGatewayErrorCodes, type ModelGatewayErrorCode } from "./errors";
+export {
+  BUDGET_EXCEEDED_HTTP_STATUS,
+  NoopBillingProvider,
+  withBudget,
+  type BillingAuthorizeInput,
+  type BillingProvider,
+  type BillingRecordInput,
+  type BudgetEnforcement,
+  type BudgetLookup,
+  type BudgetSnapshot,
+  type ModelBudget,
+} from "./billing";
 export { FakeGateway, type FakeGatewayCalls, type FakeGatewayOptions } from "./fake";
+export {
+  InMemoryUsageSink,
+  withLedger,
+  type LedgerContext,
+  type UsageLedgerEntry,
+  type UsageLedgerStatus,
+  type UsageSink,
+} from "./ledger";
 export { estimateCostFromPricing, type ModelPricing } from "./pricing";
 export {
   OpenRouterGateway,

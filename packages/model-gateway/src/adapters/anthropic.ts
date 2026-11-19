@@ -14,6 +14,7 @@ import type {
   ModelInfo,
   StreamChunk,
 } from "../types";
+import type { GatewayLogContext } from "../log";
 import { ANTHROPIC_DEFAULT_MODELS, ANTHROPIC_PRICING_BY_MODEL } from "./anthropic-pricing";
 
 export const ANTHROPIC_BASE_URL = "https://api.anthropic.com/v1";
@@ -24,6 +25,8 @@ export type AnthropicGatewayOptions = {
   fetch?: GatewayFetch;
   timeoutMs?: number;
   deploymentMode?: "cloud" | "self_hosted";
+  /** Honored only when `deploymentMode` is not `cloud`. Set from `MOS_MODEL_DEBUG=1`. */
+  modelDebug?: boolean;
 };
 
 type AnthropicContent =
@@ -131,6 +134,7 @@ export class AnthropicGateway implements ModelGateway {
   private readonly fetchImpl: GatewayFetch;
   private readonly timeoutMs: number;
   private readonly deploymentMode: "cloud" | "self_hosted";
+  private readonly logContext: GatewayLogContext;
   private modelCache: ModelInfo[] | null = null;
 
   constructor(options: AnthropicGatewayOptions) {
@@ -141,6 +145,11 @@ export class AnthropicGateway implements ModelGateway {
     this.fetchImpl = options.fetch ?? fetch;
     this.timeoutMs = options.timeoutMs ?? 60_000;
     this.deploymentMode = options.deploymentMode ?? "cloud";
+    this.logContext = {
+      provider: this.provider,
+      deploymentMode: this.deploymentMode,
+      modelDebug: options.modelDebug === true,
+    };
   }
 
   get baseUrl(): string {
@@ -157,6 +166,7 @@ export class AnthropicGateway implements ModelGateway {
         holdUntilRelease: true,
         endpointGuard: { deploymentMode: this.deploymentMode, allowPrivateEndpoints: false },
         headers: { "anthropic-version": ANTHROPIC_API_VERSION },
+        log: this.logContext,
       });
       try {
         const payload = await readJson<{ data?: Array<{ id: string; display_name?: string }> }>(
@@ -353,6 +363,7 @@ export class AnthropicGateway implements ModelGateway {
         "anthropic-version": ANTHROPIC_API_VERSION,
       },
       body: JSON.stringify(body),
+      log: this.logContext,
     });
   }
 }

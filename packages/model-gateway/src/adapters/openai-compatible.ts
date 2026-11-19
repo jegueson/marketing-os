@@ -1,6 +1,7 @@
 import type { EndpointGuardOptions } from "../endpoint-guard";
 import { ModelGatewayError } from "../errors";
 import { gatewayFetch, mapProviderErrorCode, readJson, type GatewayFetch } from "../http";
+import type { GatewayLogContext } from "../log";
 import { estimateCostFromPricing, type ModelPricing } from "../pricing";
 import { readSseData } from "../sse";
 import type {
@@ -30,6 +31,8 @@ export type OpenAICompatibleGatewayOptions = {
   structuredOutput?: StructuredOutputCapability;
   /** Reported provider id (default openai_compatible). OpenAI adapter sets `openai`. */
   reportedProvider?: ModelProvider;
+  /** Honored only when `deploymentMode` is not `cloud`. Set from `MOS_MODEL_DEBUG=1`. */
+  modelDebug?: boolean;
 };
 
 type CompatModel = { id: string; owned_by?: string };
@@ -116,6 +119,7 @@ export class OpenAICompatibleGateway implements ModelGateway {
   private readonly guard: EndpointGuardOptions;
   private readonly pricingByModel: Record<string, ModelPricing>;
   private readonly structuredOutput: StructuredOutputCapability;
+  private readonly logContext: GatewayLogContext;
   private modelCache: CompatModel[] | null = null;
 
   constructor(options: OpenAICompatibleGatewayOptions) {
@@ -133,6 +137,11 @@ export class OpenAICompatibleGateway implements ModelGateway {
     };
     this.pricingByModel = options.pricingByModel ?? {};
     this.structuredOutput = options.structuredOutput ?? "json_object";
+    this.logContext = {
+      provider: this.provider,
+      deploymentMode: options.deploymentMode,
+      modelDebug: options.modelDebug === true,
+    };
   }
 
   async listModels(): Promise<ModelInfo[]> {
@@ -304,6 +313,7 @@ export class OpenAICompatibleGateway implements ModelGateway {
       timeoutMs: this.timeoutMs,
       holdUntilRelease: true,
       endpointGuard: this.guard,
+      log: this.logContext,
     });
     try {
       const payload = await readJson<ModelsResponse>(response, this.apiKey);
@@ -342,6 +352,7 @@ export class OpenAICompatibleGateway implements ModelGateway {
       endpointGuard: this.guard,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
+      log: this.logContext,
     });
   }
 }
