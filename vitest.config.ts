@@ -28,6 +28,7 @@ export default defineConfig({
       "modules/**/*.test.ts",
       "connectors/**/*.test.ts",
       "e2e/**/*.api.test.ts",
+      "evals/**/*.test.ts",
     ],
     environment: "node",
   },

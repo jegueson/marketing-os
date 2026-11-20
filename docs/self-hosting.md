@@ -46,6 +46,47 @@ pnpm mos setup --email=you@example.com --tenant="My Team" --slug=my-team
 
 Running it again is safe: it reports `created: false` and changes nothing.
 
+### Model: OpenRouter
+
+OpenRouter is the default provider. No base URL.
+
+```bash
+export MOS_MODEL_API_KEY=<OpenRouter key>
+pnpm mos setup --email=you@example.com --tenant="My Team" --slug=my-team --provider=openrouter
+```
+
+After sign-in, open **Models** (`/portal/settings/models`). Set **Default model** to a model id your key can call, for example `openai/gpt-4o-mini`. Choose **Save model settings**, then **Test connection**. The page shows a fingerprint, not the key.
+
+### Model: Ollama
+
+Ollama speaks the OpenAI-compatible API on a private address. The API refuses that address unless private endpoints are allowed. In `apps/api/.dev.vars`:
+
+```bash
+MOS_MODEL_ALLOW_PRIVATE_ENDPOINTS=1
+```
+
+Restart `pnpm dev` after changing that file. Pull a model, then seal a local placeholder key (at least 8 characters; Ollama does not use it as a secret):
+
+```bash
+ollama pull llama3.2
+export MOS_MODEL_API_KEY=ollama-local
+pnpm mos setup --email=you@example.com --tenant="My Team" --slug=my-team --provider=openai_compatible
+```
+
+In **Models**, set **Base URL** to `http://127.0.0.1:11434/v1`, set **Default model** to the name from `ollama list` (for example `llama3.2`), paste the same placeholder key, and save. **Test connection** must succeed before Ask can run. A blocked host returns `endpoint_blocked`.
+
+`MOS_MODEL_DEBUG=1` logs prompt bodies. Leave it unset. It is ignored when `MOS_DEPLOYMENT_MODE=cloud`.
+
+### Ask a question
+
+Ask is off in this release until you enable it. From a shell where `DATABASE_URL` is the local database:
+
+```bash
+psql "$DATABASE_URL" -c "update feature_flags set is_enabled = true where key = 'ask_marketing';"
+```
+
+Reload the portal. The steps from a signed-in admin to a first answer are in [ask-marketing.md](ask-marketing.md).
+
 ### Back up the data key
 
 `MOS_DATA_KEY` encrypts connector credentials and the model key. Losing it makes those secrets unreadable. There is no recovery path in the database. Store a copy in the same password manager you use for the Supabase service role key, outside the git repository and outside `.dev.vars`.

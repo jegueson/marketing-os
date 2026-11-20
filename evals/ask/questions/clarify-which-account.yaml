@@ -1,0 +1,27 @@
+id: clarify-which-account
+group: clarification
+question: "What changed?"
+catalog:
+  - mock.spend
+labels:
+  mock.spend: "Spend"
+now: 2026-04-01T15:00:00.000Z
+model: gpt-test
+workspaceId: 00000000-0000-4000-8000-000000000010
+runId: 00000000-0000-4000-8000-000000000025
+reader:
+  metric: mock.spend
+  value: 2550
+  unit: "currency"
+  source: mock
+  definitionVersion: "1"
+  fetchedAt: 2026-04-01T15:00:00.000Z
+replay:
+  plan:
+    intent: needs_clarification
+    clarification: "Which account should I use?"
+    steps: []
+expect:
+  refusal: needs_clarification
+  message: "Which account should I use?"
+  modelCalls: 1

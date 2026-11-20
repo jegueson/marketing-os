@@ -1,4 +1,5 @@
 import { z } from "@hono/zod-openapi";
+import { streamSSE } from "hono/streaming";
 import { and, eq } from "drizzle-orm";
 import { AppError, ForbiddenError, NotFoundError, ok } from "@marketing-os/core";
 import {
@@ -10,9 +11,11 @@ import {
   recordUsage,
   resolveModelCredential,
   withContext,
+  type Database,
+  type DbContext,
 } from "@marketing-os/db";
-import { withLedger, type UsageLedgerEntry, type UsageSink } from "@marketing-os/model-gateway";
-import { runAsk } from "@marketing-os/ask";
+import { withLedger, type ModelGateway, type UsageLedgerEntry, type UsageSink } from "@marketing-os/model-gateway";
+import { runAsk, type MetricReader } from "@marketing-os/ask";
 import type { AskStreamEvent } from "@marketing-os/schemas";
 import { requirePrincipal } from "../auth/principal";
 import { requireWorkspace } from "../auth/access";
@@ -46,19 +49,22 @@ const responseSchema = z.object({
   ),
 });
 
-const path = "/api/v1/workspaces/{workspaceId}/ask/conversations/{conversationId}/messages";
+const paramsSchema = z.object({
+  workspaceId: uuidPathParam("workspaceId"),
+  conversationId: uuidPathParam("conversationId"),
+});
+
+const messagePath = "/api/v1/workspaces/{workspaceId}/ask/conversations/{conversationId}/messages";
+const streamPath = `${messagePath}/stream`;
 
 const postRoute = defineRoute({
   method: "post",
-  path,
+  path: messagePath,
   tags: ["Ask"],
   security: [{ Bearer: [] }],
   middleware: [requirePrincipal, requireWorkspace("ask:use")],
   request: {
-    params: z.object({
-      workspaceId: uuidPathParam("workspaceId"),
-      conversationId: uuidPathParam("conversationId"),
-    }),
+    params: paramsSchema,
     body: jsonContent(bodySchema, "Ask question"),
   },
   responses: {
@@ -67,11 +73,56 @@ const postRoute = defineRoute({
   },
 });
 
+const streamRoute = defineRoute({
+  method: "post",
+  path: streamPath,
+  tags: ["Ask"],
+  security: [{ Bearer: [] }],
+  middleware: [requirePrincipal, requireWorkspace("ask:use")],
+  request: {
+    params: paramsSchema,
+    body: jsonContent(bodySchema, "Ask question"),
+  },
+  responses: {
+    200: {
+      description: "Ask event stream",
+      content: {
+        "text/event-stream": {
+          schema: z.string().openapi({ description: "SSE data lines. Each payload is one AskStreamEvent." }),
+        },
+      },
+    },
+    ...errorResponses(401, 403, 404, 402, 422, 429),
+  },
+});
+
 const NAMESPACED = /^[a-z0-9]+(?:[._][a-z0-9]+)+$/;
+
+type PreparedAsk = {
+  conversationId: string;
+  content: string;
+  workspaceId: string;
+  tenantId: string;
+  userId: string;
+  role: string;
+  requestId: string;
+  db: Database;
+  ctx: DbContext;
+  catalog: string[];
+  runId: string;
+  hash: string;
+  model: string;
+  gateway: ModelGateway;
+  reader: MetricReader;
+};
 
 async function questionHash(content: string): Promise<string> {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(content));
   return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+function isAbort(err: unknown): boolean {
+  return err instanceof Error && err.name === "AbortError";
 }
 
 async function requireAskEnabled(c: AppContext): Promise<void> {
@@ -81,10 +132,9 @@ async function requireAskEnabled(c: AppContext): Promise<void> {
   if (!flag?.isEnabled) throw new ForbiddenError("Ask Marketing is not enabled");
 }
 
-askMessageRoutes.openapi(postRoute, async (c) => {
+/** Auth, flag, rate limit, key, ownership, and hard budget. Throws before any model call. */
+async function prepareAsk(c: AppContext, input: { conversationId: string; content: string }): Promise<PreparedAsk> {
   await requireAskEnabled(c);
-  const { conversationId } = c.req.valid("param");
-  const { content } = c.req.valid("json");
   const access = c.get("access");
   const principal = c.get("principal");
   const workspaceId = access.workspaceId;
@@ -103,7 +153,7 @@ askMessageRoutes.openapi(postRoute, async (c) => {
     const [conversation] = await tx
       .select({ id: askConversations.id })
       .from(askConversations)
-      .where(and(eq(askConversations.id, conversationId), eq(askConversations.workspaceId, workspaceId)));
+      .where(and(eq(askConversations.id, input.conversationId), eq(askConversations.workspaceId, workspaceId)));
     return conversation ?? null;
   });
   if (!owned) throw new NotFoundError("Conversation not found");
@@ -119,33 +169,113 @@ askMessageRoutes.openapi(postRoute, async (c) => {
   const reader = createDrizzleMetricReader(db, { tenantId: access.tenantId, workspaceId });
   const catalog = (await reader.listMetrics()).map((metric) => metric.key).filter((key) => NAMESPACED.test(key));
   const runId = crypto.randomUUID();
-  const hash = await questionHash(content);
   const sink: UsageSink = {
     async record(entry: UsageLedgerEntry) {
       await recordUsage(db, ctx, { ...entry, runId });
     },
   };
-  const gateway = withLedger(deps.createModelGateway(credential, config, c.env), sink, {
+  return {
+    conversationId: input.conversationId,
+    content: input.content,
+    workspaceId,
     tenantId: access.tenantId,
-    workspaceId,
     userId: principal.userId,
-    runId,
-    purpose: "ask",
-    promptName: "ask.plan",
-    promptVersion: "1",
-  });
-
-  const events: AskStreamEvent[] = [];
-  for await (const event of runAsk({
-    question: content,
+    role: access.role,
+    requestId: c.get("requestId"),
+    db,
+    ctx,
     catalog,
-    model: credential.defaultModel ?? "gpt-test",
-    gateway,
-    reader,
-    workspaceId,
     runId,
-    labels: Object.fromEntries(catalog.map((key) => [key, key])),
-  })) {
+    hash: await questionHash(input.content),
+    model: credential.defaultModel ?? "gpt-test",
+    gateway: withLedger(deps.createModelGateway(credential, config, c.env), sink, {
+      tenantId: access.tenantId,
+      workspaceId,
+      userId: principal.userId,
+      runId,
+      purpose: "ask",
+      promptName: "ask.plan",
+      promptVersion: "1",
+    }),
+    reader,
+  };
+}
+
+async function persistAsk(
+  prepared: PreparedAsk,
+  outcome: { status: "succeeded" | "failed" | "aborted"; assistant: string; errorCode: string | null },
+): Promise<string | null> {
+  const assistantId = outcome.assistant.trim() ? crypto.randomUUID() : null;
+  await withContext(prepared.db, prepared.ctx, async (tx) => {
+    await tx.insert(askMessages).values({
+      conversationId: prepared.conversationId,
+      tenantId: prepared.tenantId,
+      userId: prepared.userId,
+      role: "user",
+      content: prepared.content,
+    });
+    if (assistantId) {
+      await tx.insert(askMessages).values({
+        id: assistantId,
+        conversationId: prepared.conversationId,
+        tenantId: prepared.tenantId,
+        userId: prepared.userId,
+        role: "assistant",
+        content: outcome.assistant,
+      });
+    }
+    await tx.insert(askRuns).values({
+      id: prepared.runId,
+      conversationId: prepared.conversationId,
+      messageId: assistantId,
+      tenantId: prepared.tenantId,
+      userId: prepared.userId,
+      status: outcome.status,
+      promptName: "ask.answer",
+      promptVersion: "1",
+      questionHash: prepared.hash,
+      errorCode: outcome.errorCode,
+      finishedAt: new Date(),
+    });
+    await recordAudit(tx, {
+      tenantId: prepared.tenantId,
+      workspaceId: prepared.workspaceId,
+      actorId: prepared.userId,
+      actorRole: prepared.role,
+      requestId: prepared.requestId,
+      eventType: outcome.status === "succeeded" ? "ask.message_created" : `ask.message_${outcome.status}`,
+      resourceType: "ask_run",
+      resourceId: prepared.runId,
+      payload: { questionHash: prepared.hash },
+    });
+    await tx
+      .update(askConversations)
+      .set({ updatedAt: new Date() })
+      .where(eq(askConversations.id, prepared.conversationId));
+  });
+  return assistantId;
+}
+
+function askInput(prepared: PreparedAsk, signal?: AbortSignal) {
+  return {
+    question: prepared.content,
+    catalog: prepared.catalog,
+    model: prepared.model,
+    gateway: prepared.gateway,
+    reader: prepared.reader,
+    workspaceId: prepared.workspaceId,
+    runId: prepared.runId,
+    labels: Object.fromEntries(prepared.catalog.map((key) => [key, key])),
+    ...(signal ? { signal } : {}),
+  };
+}
+
+askMessageRoutes.openapi(postRoute, async (c) => {
+  const { conversationId } = c.req.valid("param");
+  const { content } = c.req.valid("json");
+  const prepared = await prepareAsk(c, { conversationId, content });
+  const events: AskStreamEvent[] = [];
+  for await (const event of runAsk(askInput(prepared))) {
     events.push(event);
   }
   const answer = events.find((event) => event.type === "answer");
@@ -160,56 +290,18 @@ askMessageRoutes.openapi(postRoute, async (c) => {
     throw new AppError(code, message, code === "budget_exceeded" ? 402 : 422);
   }
 
-  const messageId = crypto.randomUUID();
-  await withContext(db, ctx, async (tx) => {
-    await tx.insert(askMessages).values({
-      conversationId,
-      tenantId: access.tenantId,
-      userId: principal.userId,
-      role: "user",
-      content,
-    });
-    await tx.insert(askMessages).values({
-      id: messageId,
-      conversationId,
-      tenantId: access.tenantId,
-      userId: principal.userId,
-      role: "assistant",
-      content: answer.answer.observations.join("\n"),
-    });
-    await tx.insert(askRuns).values({
-      id: runId,
-      conversationId,
-      messageId,
-      tenantId: access.tenantId,
-      userId: principal.userId,
-      status: "succeeded",
-      promptName: "ask.answer",
-      promptVersion: "1",
-      questionHash: hash,
-    });
-    await recordAudit(tx, {
-      tenantId: access.tenantId,
-      workspaceId,
-      actorId: principal.userId,
-      actorRole: access.role,
-      requestId: c.get("requestId"),
-      eventType: "ask.message_created",
-      resourceType: "ask_run",
-      resourceId: runId,
-      payload: { questionHash: hash },
-    });
-    await tx
-      .update(askConversations)
-      .set({ updatedAt: new Date() })
-      .where(eq(askConversations.id, conversationId));
+  const messageId = await persistAsk(prepared, {
+    status: "succeeded",
+    assistant: answer.answer.observations.join("\n"),
+    errorCode: null,
   });
+  if (!messageId) throw new AppError("plan_invalid", "Ask did not produce an answer", 422);
 
   return c.json(
     ok({
       conversationId,
       messageId,
-      runId,
+      runId: prepared.runId,
       observations: answer.answer.observations,
       interpretation: answer.answer.interpretation,
       freshness: answer.answer.evidence.freshness,
@@ -221,4 +313,51 @@ askMessageRoutes.openapi(postRoute, async (c) => {
     }),
     201,
   );
+});
+
+askMessageRoutes.openapi(streamRoute, async (c) => {
+  const { conversationId } = c.req.valid("param");
+  const { content } = c.req.valid("json");
+  const prepared = await prepareAsk(c, { conversationId, content });
+  const controller = new AbortController();
+
+  return streamSSE(c, async (stream) => {
+    const stop = () => controller.abort();
+    c.req.raw.signal.addEventListener("abort", stop, { once: true });
+    stream.onAbort(stop);
+    const deltas: string[] = [];
+    let assistant = "";
+    let status: "succeeded" | "failed" = "failed";
+    let errorCode: string | null = "plan_invalid";
+    try {
+      for await (const event of runAsk(askInput(prepared, controller.signal))) {
+        if (stream.aborted || controller.signal.aborted) break;
+        if (event.type === "delta") deltas.push(event.text);
+        if (event.type === "answer") {
+          status = "succeeded";
+          errorCode = null;
+          assistant = event.answer.observations.join("\n");
+        }
+        if (event.type === "refusal") {
+          status = "failed";
+          errorCode = event.code;
+          assistant = event.message;
+        }
+        if (event.type === "error") {
+          status = "failed";
+          errorCode = event.code;
+          assistant = event.message;
+        }
+        await stream.writeSSE({ data: JSON.stringify(event) });
+      }
+    } catch (err) {
+      if (!isAbort(err) && !controller.signal.aborted) throw err;
+    }
+    // Disconnect aborts the in-flight model call. withLedger already wrote status aborted.
+    if (controller.signal.aborted || stream.aborted) {
+      await persistAsk(prepared, { status: "aborted", assistant: deltas.join("\n"), errorCode: "aborted" });
+      return;
+    }
+    await persistAsk(prepared, { status, assistant, errorCode });
+  });
 });

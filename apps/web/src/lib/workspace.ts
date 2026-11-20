@@ -1,4 +1,4 @@
-import { canTransitionLead, leadStatuses, type LeadStatus } from "@marketing-os/core";
+import { canTransitionLead, isRole, leadStatuses, roleHasPermission, type LeadStatus } from "@marketing-os/core";
 
 export type Membership = {
   tenantId: string;
@@ -42,4 +42,36 @@ export function homeFor(me: Me): string {
 export function safeNext(next: string | null): string | null {
   if (!next || !next.startsWith("/") || next.startsWith("//")) return null;
   return next;
+}
+
+/** Model settings are limited to roles with `models:manage`. */
+export function canManageModels(role: string): boolean {
+  return isRole(role) && roleHasPermission(role, "models:manage");
+}
+
+/** Ask is limited to roles with `ask:use`. The nav also requires the `ask_marketing` flag. */
+export function canUseAsk(role: string): boolean {
+  return isRole(role) && roleHasPermission(role, "ask:use");
+}
+
+/** Portal links for one workspace. Models and Ask stay hidden without permission and flag. */
+export function portalLinks(
+  workspaceId: string,
+  role: string,
+  flags: Readonly<Record<string, boolean>> = {},
+): { href: string; label: string }[] {
+  const q = `?ws=${encodeURIComponent(workspaceId)}`;
+  const links = [
+    { href: `/portal${q}`, label: "Home" },
+    { href: `/portal/onboarding${q}`, label: "Onboarding" },
+    { href: `/portal/integrations${q}`, label: "Integrations" },
+    { href: `/portal/cockpit${q}`, label: "Cockpit" },
+  ];
+  if (flags.ask_marketing === true && canUseAsk(role)) {
+    links.push({ href: `/portal/ask${q}`, label: "Ask" });
+  }
+  if (canManageModels(role)) {
+    links.push({ href: `/portal/settings/models${q}`, label: "Models" });
+  }
+  return links;
 }

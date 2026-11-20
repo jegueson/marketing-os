@@ -1,0 +1,42 @@
+id: partial-sessions
+group: partial_coverage
+question: "How much of sessions is covered?"
+catalog:
+  - mock.sessions
+labels:
+  mock.sessions: "Sessions"
+now: 2026-04-01T15:00:00.000Z
+model: gpt-test
+workspaceId: 00000000-0000-4000-8000-000000000010
+runId: 00000000-0000-4000-8000-000000000030
+reader:
+  metric: mock.sessions
+  value: 3000
+  unit: "count"
+  source: mock
+  definitionVersion: "1"
+  fetchedAt: 2026-04-01T15:00:00.000Z
+  coverage:
+    status: partial
+    requestedDays: 30
+    coveredDays: 10
+replay:
+  plan:
+    intent: answerable
+    steps:
+      - id: s1
+        tool: metric_value
+        metricKey: mock.sessions
+        range: last_30_days
+  answer:
+    observations:
+      - "Value is {{o1}}."
+    interpretation: "Coverage is partial."
+expect:
+  observations:
+    - "Sessions: 3000"
+  evidenceValue: 3000
+  warnings:
+    - "partial coverage"
+  freshness: live
+  modelCalls: 2

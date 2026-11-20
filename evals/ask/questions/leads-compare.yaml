@@ -1,0 +1,43 @@
+id: leads-compare
+group: period_compare
+question: "How do leads compare with the previous period?"
+catalog:
+  - mock.leads
+labels:
+  mock.leads: "Leads"
+now: 2026-04-01T15:00:00.000Z
+model: gpt-test
+workspaceId: 00000000-0000-4000-8000-000000000010
+runId: 00000000-0000-4000-8000-000000000007
+reader:
+  metric: mock.leads
+  value: 40
+  unit: "count"
+  source: mock
+  definitionVersion: "1"
+  fetchedAt: 2026-04-01T15:00:00.000Z
+  compare:
+    current: 40
+    previous: 30
+    delta: 10
+replay:
+  plan:
+    intent: answerable
+    steps:
+      - id: s1
+        tool: metric_compare
+        metricKey: mock.leads
+        range: last_30_days
+        compareTo: previous_period
+  answer:
+    observations:
+      - "Current is {{o1}}."
+      - "Previous is {{o2}}."
+    interpretation: "Compared with the previous period."
+expect:
+  observations:
+    - "Leads: 40"
+    - "Leads previous period: 30"
+  interpretationIncludes: "previous period"
+  evidenceValue: 40
+  modelCalls: 2

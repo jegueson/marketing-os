@@ -1,0 +1,36 @@
+id: impressions-last-7-days
+group: single_metric
+question: "How many impressions did we get in the last 7 days?"
+catalog:
+  - mock.impressions
+labels:
+  mock.impressions: "Impressions"
+now: 2026-04-01T15:00:00.000Z
+model: gpt-test
+workspaceId: 00000000-0000-4000-8000-000000000010
+runId: 00000000-0000-4000-8000-000000000003
+reader:
+  metric: mock.impressions
+  value: 10000
+  unit: "count"
+  source: mock
+  definitionVersion: "1"
+  fetchedAt: 2026-04-01T15:00:00.000Z
+replay:
+  plan:
+    intent: answerable
+    steps:
+      - id: s1
+        tool: metric_value
+        metricKey: mock.impressions
+        range: last_7_days
+  answer:
+    observations:
+      - "Value is {{o1}}."
+    interpretation: "Within the selected range."
+expect:
+  observations:
+    - "Impressions: 10000"
+  interpretationIncludes: "selected range"
+  evidenceValue: 10000
+  modelCalls: 2

@@ -97,3 +97,30 @@ jobs:
           name: playwright-report
           path: e2e/playwright-report
           retention-days: 7
+
+  ask-live:
+    name: Ask live eval
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: ${{ secrets.MOS_EVAL_MODEL_KEY != '' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Enable pnpm
+        run: corepack enable
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Live golden questions
+        run: pnpm --filter @marketing-os/ask-eval live
+        env:
+          MOS_EVAL_MODEL_KEY: ${{ secrets.MOS_EVAL_MODEL_KEY }}
+          MOS_EVAL_MODEL: ${{ vars.MOS_EVAL_MODEL }}

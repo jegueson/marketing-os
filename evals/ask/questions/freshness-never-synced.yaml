@@ -1,0 +1,47 @@
+id: freshness-never-synced
+group: freshness
+question: "Has sessions ever synced?"
+catalog:
+  - mock.sessions
+labels:
+  mock.sessions: "Sessions"
+now: 2026-04-01T15:00:00.000Z
+model: gpt-test
+workspaceId: 00000000-0000-4000-8000-000000000010
+runId: 00000000-0000-4000-8000-000000000014
+reader:
+  metric: mock.sessions
+  value: 3000
+  unit: "count"
+  source: mock
+  definitionVersion: "1"
+  fetchedAt: 2026-04-01T15:00:00.000Z
+  health:
+    - connectionId: 00000000-0000-4000-8000-0000000000ab
+      connector: mock
+      health: never_synced
+      message: "No successful sync yet."
+      scopes:
+        - mock-account-1
+replay:
+  plan:
+    intent: answerable
+    steps:
+      - id: h1
+        tool: data_health
+      - id: s1
+        tool: metric_value
+        metricKey: mock.sessions
+        range: last_30_days
+  answer:
+    observations:
+      - "Value is {{o1}}."
+    interpretation: "The source has never synced."
+expect:
+  observations:
+    - "Sessions: 3000"
+  evidenceValue: 3000
+  warnings:
+    - "never_synced"
+  freshness: live
+  modelCalls: 2

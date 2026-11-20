@@ -86,7 +86,7 @@ export default function CockpitPage() {
       <h1>Cockpit</h1>
       <RequireAuth>
         {(auth) => (
-          <PortalFrame me={auth.me}>{(ws) => <Cockpit auth={auth} ws={ws} />}</PortalFrame>
+          <PortalFrame me={auth.me} api={auth.api}>{(ws) => <Cockpit auth={auth} ws={ws} />}</PortalFrame>
         )}
       </RequireAuth>
     </main>

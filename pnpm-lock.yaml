@@ -296,6 +296,40 @@ importers:
         specifier: ^5.1.0
         version: 5.1.0(@types/node@26.6.6)(jsdom@26.1.0)(vite@7.3.7(@types/node@26.6.6)(jiti@2.7.0)(lightningcss@1.33.0)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.1))
 
+  evals/ask:
+    dependencies:
+      '@marketing-os/ask':
+        specifier: workspace:*
+        version: link:../../packages/ask
+      '@marketing-os/model-gateway':
+        specifier: workspace:*
+        version: link:../../packages/model-gateway
+      '@marketing-os/prompts':
+        specifier: workspace:*
+        version: link:../../packages/prompts
+      '@marketing-os/schemas':
+        specifier: workspace:*
+        version: link:../../packages/schemas
+      yaml:
+        specifier: ^2.9.1
+        version: 2.9.1
+      zod:
+        specifier: ^4.6.7
+        version: 4.6.7
+    devDependencies:
+      '@types/node':
+        specifier: ^26.6.6
+        version: 26.6.6
+      tsx:
+        specifier: ^4.20.5
+        version: 4.23.15
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+      vitest:
+        specifier: ^5.1.0
+        version: 5.1.0(@types/node@26.6.6)(jsdom@26.1.0)(vite@7.3.7(@types/node@26.6.6)(jiti@2.7.0)(lightningcss@1.33.0)(terser@5.46.0)(tsx@4.23.15)(yaml@2.9.1))
+
   packages/api-client:
     dependencies:
       zod:

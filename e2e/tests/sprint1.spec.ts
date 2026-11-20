@@ -61,6 +61,8 @@ async function connectMockAndCheckCockpit(page: Page) {
   await page.getByRole("link", { name: "Cockpit" }).click();
   await expect(page.getByText(/data live/)).toBeVisible();
   await expect(page.getByRole("cell", { name: "healthy" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Ask", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Models", exact: true })).toBeVisible();
 }
 
 test("setup wizard install: admin signs in, connects mock and sees the cockpit", async ({ page }) => {

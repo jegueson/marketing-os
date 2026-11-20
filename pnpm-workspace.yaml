@@ -4,3 +4,4 @@ packages:
   - "modules/*"
   - "connectors/*"
   - "e2e"
+  - "evals/*"

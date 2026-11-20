@@ -1,0 +1,26 @@
+{
+  "name": "@marketing-os/ask-eval",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "replay": "tsx src/cli.ts --mode replay",
+    "live": "tsx src/cli.ts --mode live"
+  },
+  "dependencies": {
+    "@marketing-os/ask": "workspace:*",
+    "@marketing-os/model-gateway": "workspace:*",
+    "@marketing-os/prompts": "workspace:*",
+    "@marketing-os/schemas": "workspace:*",
+    "yaml": "^2.9.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2",
+    "vitest": "^5.1.0"
+  }
+}

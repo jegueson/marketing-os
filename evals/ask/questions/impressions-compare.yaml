@@ -1,0 +1,43 @@
+id: impressions-compare
+group: period_compare
+question: "How do impressions compare with the previous period?"
+catalog:
+  - mock.impressions
+labels:
+  mock.impressions: "Impressions"
+now: 2026-04-01T15:00:00.000Z
+model: gpt-test
+workspaceId: 00000000-0000-4000-8000-000000000010
+runId: 00000000-0000-4000-8000-000000000008
+reader:
+  metric: mock.impressions
+  value: 10000
+  unit: "count"
+  source: mock
+  definitionVersion: "1"
+  fetchedAt: 2026-04-01T15:00:00.000Z
+  compare:
+    current: 10000
+    previous: 8000
+    delta: 2000
+replay:
+  plan:
+    intent: answerable
+    steps:
+      - id: s1
+        tool: metric_compare
+        metricKey: mock.impressions
+        range: last_30_days
+        compareTo: previous_period
+  answer:
+    observations:
+      - "Current is {{o1}}."
+      - "Previous is {{o2}}."
+    interpretation: "Compared with the previous period."
+expect:
+  observations:
+    - "Impressions: 10000"
+    - "Impressions previous period: 8000"
+  interpretationIncludes: "previous period"
+  evidenceValue: 10000
+  modelCalls: 2

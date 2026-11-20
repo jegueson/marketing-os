@@ -1,0 +1,36 @@
+id: lead-cac
+group: ratio
+question: "What is our lead CAC?"
+catalog:
+  - mock.lead_cac
+labels:
+  mock.lead_cac: "Lead CAC"
+now: 2026-04-01T15:00:00.000Z
+model: gpt-test
+workspaceId: 00000000-0000-4000-8000-000000000010
+runId: 00000000-0000-4000-8000-000000000009
+reader:
+  metric: mock.lead_cac
+  value: 255
+  unit: "currency"
+  source: mock
+  definitionVersion: "1"
+  fetchedAt: 2026-04-01T15:00:00.000Z
+replay:
+  plan:
+    intent: answerable
+    steps:
+      - id: s1
+        tool: metric_value
+        metricKey: mock.lead_cac
+        range: last_30_days
+  answer:
+    observations:
+      - "Value is {{o1}}."
+    interpretation: "The ratio comes from the tool result."
+expect:
+  observations:
+    - "Lead CAC: 255"
+  interpretationIncludes: "ratio"
+  evidenceValue: 255
+  modelCalls: 2

@@ -66,7 +66,7 @@ export default function OnboardingPage() {
       <h1>Onboarding</h1>
       <RequireAuth>
         {(auth) => (
-          <PortalFrame me={auth.me}>{(ws) => <Checklist auth={auth} ws={ws} />}</PortalFrame>
+          <PortalFrame me={auth.me} api={auth.api}>{(ws) => <Checklist auth={auth} ws={ws} />}</PortalFrame>
         )}
       </RequireAuth>
     </main>

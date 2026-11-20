@@ -4,7 +4,7 @@ The open-source operating system for a marketing team. Connect the stack you alr
 
 The software is free to run. You bring a model key. Specialist help and managed hosting are separate paid offers. See [COMMERCIAL.md](COMMERCIAL.md).
 
-**Status: pre-alpha (Sprint 1).** Lead intake, provisioning, invitations, the mock connector, the cockpit shell and the specialist console work end to end on the local stack, with `mos setup` for a single-tenant install. Real data connectors arrive in Sprint 2. See [docs/self-hosting.md](docs/self-hosting.md).
+**Status: v0.1.0-alpha (Sprint 3).** A local install can connect the mock source, open the cockpit, and ask a question about that data. Ask stays off until you enable the `ask_marketing` flag. The release steps are in [docs/releases/v0.1.0-alpha.md](docs/releases/v0.1.0-alpha.md). See [docs/self-hosting.md](docs/self-hosting.md) and [docs/ask-marketing.md](docs/ask-marketing.md).
 
 ## What you get
 
@@ -26,9 +26,7 @@ Two targets. See [docs/self-hosting.md](docs/self-hosting.md).
 
 ```bash
 pnpm install
-pnpm mos setup --mode=self_hosted --email=you@example.com --tenant="My Team" --slug=my-team --model-key=$OPENROUTER_API_KEY
-docker compose -f deploy/docker-compose.yml up -d   # optional local Postgres + Mailpit
-pnpm test
+# Then follow docs/self-hosting.md. The model key is an environment variable, not a CLI flag.
 pnpm dev
 ```
 
@@ -60,9 +58,11 @@ There is no self-service checkout. Cloud workspaces are provisioned after a conv
 | [apps/api](apps/api) | Hono API Worker |
 | [apps/web](apps/web) | Next.js (OpenNext on Workers) |
 | [apps/cli](apps/cli) | `mos` setup / deploy CLI |
-| [packages/](packages) | core, db, ui, schemas, connector-sdk, metrics, api-client |
-| [connectors/mock](connectors/mock) | Deterministic Sprint 1 connector |
+| [packages/](packages) | core, db, ui, schemas, connector-sdk, metrics, api-client, ask, prompts, model-gateway |
+| [connectors/mock](connectors/mock) | Deterministic mock connector |
 | [docs/adr/](docs/adr/README.md) | Architecture decisions |
+| [docs/ask-marketing.md](docs/ask-marketing.md) | Ask a question about synced metrics |
+| [docs/security/s3-review.md](docs/security/s3-review.md) | Sprint 3 security review |
 | [docs/design/](docs/design/README.md) | Investor demo (`demo/investor` branch): design system, screens, demo script |
 | [Planning/prd_v4_addendum.md](Planning/prd_v4_addendum.md) | Daily workspace, intelligence, studio, influencer, automation integration |
 | [docs/architecture/sprint1-schema.md](docs/architecture/sprint1-schema.md) | Database contract for the first schema |
