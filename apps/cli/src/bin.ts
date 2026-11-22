@@ -95,7 +95,7 @@ async function modelsMigrate() {
 
 async function main() {
   const argv = process.argv.slice(2);
-  const [cmd, sub, ...rest] = argv;
+  const [cmd, sub] = argv;
   if (cmd === "setup") return setup(parseArgs(argv.slice(1)));
   if (cmd === "models" && sub === "migrate") return modelsMigrate();
   if (cmd === "deploy") {
