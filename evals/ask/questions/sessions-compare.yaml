@@ -1,0 +1,43 @@
+id: sessions-compare
+group: period_compare
+question: "How do sessions compare with the previous period?"
+catalog:
+  - mock.sessions
+labels:
+  mock.sessions: "Sessions"
+now: 2026-04-01T15:00:00.000Z
+model: gpt-test
+workspaceId: 00000000-0000-4000-8000-000000000010
+runId: 00000000-0000-4000-8000-000000000006
+reader:
+  metric: mock.sessions
+  value: 3000
+  unit: "count"
+  source: mock
+  definitionVersion: "1"
+  fetchedAt: 2026-04-01T15:00:00.000Z
+  compare:
+    current: 3000
+    previous: 2500
+    delta: 500
+replay:
+  plan:
+    intent: answerable
+    steps:
+      - id: s1
+        tool: metric_compare
+        metricKey: mock.sessions
+        range: last_30_days
+        compareTo: previous_period
+  answer:
+    observations:
+      - "Current is {{o1}}."
+      - "Previous is {{o2}}."
+    interpretation: "Compared with the previous period."
+expect:
+  observations:
+    - "Sessions: 3000"
+    - "Sessions previous period: 2500"
+  interpretationIncludes: "previous period"
+  evidenceValue: 3000
+  modelCalls: 2

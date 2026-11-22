@@ -5,7 +5,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./kpi": "./src/kpi.ts"
+    "./kpi": "./src/kpi.ts",
+    "./windows": "./src/windows.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json --noEmit",

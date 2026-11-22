@@ -1,0 +1,36 @@
+id: conversions-last-month
+group: single_metric
+question: "How many conversions did we get last month?"
+catalog:
+  - mock.conversions
+labels:
+  mock.conversions: "Conversions"
+now: 2026-04-01T15:00:00.000Z
+model: gpt-test
+workspaceId: 00000000-0000-4000-8000-000000000010
+runId: 00000000-0000-4000-8000-000000000004
+reader:
+  metric: mock.conversions
+  value: 12
+  unit: "count"
+  source: mock
+  definitionVersion: "1"
+  fetchedAt: 2026-04-01T15:00:00.000Z
+replay:
+  plan:
+    intent: answerable
+    steps:
+      - id: s1
+        tool: metric_value
+        metricKey: mock.conversions
+        range: last_month
+  answer:
+    observations:
+      - "Value is {{o1}}."
+    interpretation: "Within the selected range."
+expect:
+  observations:
+    - "Conversions: 12"
+  interpretationIncludes: "selected range"
+  evidenceValue: 12
+  modelCalls: 2

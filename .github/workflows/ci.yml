@@ -36,6 +36,12 @@ jobs:
       - name: OpenAPI client up to date
         run: pnpm openapi:check
 
+      - name: Prompt lock
+        run: pnpm prompts:check
+
+      - name: Ask replay eval
+        run: pnpm eval:ask
+
       - name: Lint
         run: pnpm lint
 

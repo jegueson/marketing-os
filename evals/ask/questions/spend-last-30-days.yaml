@@ -1,0 +1,36 @@
+id: spend-last-30-days
+group: single_metric
+question: How much did we spend?
+catalog:
+  - mock.spend
+labels:
+  mock.spend: Spend
+now: 2026-04-01T15:00:00.000Z
+model: gpt-test
+workspaceId: 00000000-0000-4000-8000-000000000010
+runId: 00000000-0000-4000-8000-000000000099
+reader:
+  metric: mock.spend
+  value: 2550
+  unit: EUR
+  source: mock
+  definitionVersion: "1"
+  fetchedAt: 2026-04-01T15:00:00.000Z
+replay:
+  plan:
+    intent: answerable
+    steps:
+      - id: s1
+        tool: metric_value
+        metricKey: mock.spend
+        range: last_30_days
+  answer:
+    observations:
+      - "Spend was {{o1}}."
+    interpretation: Within the selected range.
+expect:
+  observations:
+    - "Spend: 2550"
+  interpretationIncludes: selected range
+  evidenceValue: 2550
+  modelCalls: 2

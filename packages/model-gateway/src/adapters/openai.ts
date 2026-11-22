@@ -11,6 +11,8 @@ export type OpenAIGatewayOptions = {
   timeoutMs?: number;
   /** Defaults to cloud (public https endpoint). */
   deploymentMode?: "cloud" | "self_hosted";
+  /** Honored only when `deploymentMode` is not `cloud`. Set from `MOS_MODEL_DEBUG=1`. */
+  modelDebug?: boolean;
 };
 
 /**
@@ -30,6 +32,7 @@ export class OpenAIGateway implements ModelGateway {
       pricingByModel: OPENAI_PRICING_BY_MODEL,
       structuredOutput: "json_schema",
       reportedProvider: "openai",
+      modelDebug: options.modelDebug === true,
     };
     if (options.fetch !== undefined) innerOptions.fetch = options.fetch;
     if (options.timeoutMs !== undefined) innerOptions.timeoutMs = options.timeoutMs;

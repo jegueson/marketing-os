@@ -20,6 +20,9 @@ import { consoleRoutes } from "./routes/console";
 import { oauthRoutes } from "./routes/oauth";
 import { syncRoutes } from "./routes/sync";
 import { modelsRoutes } from "./routes/models";
+import { modelUsageRoutes } from "./routes/model-usage";
+import { askConversationRoutes } from "./routes/ask-conversations";
+import { askMessageRoutes } from "./routes/ask-messages";
 
 export type { HonoEnv } from "./context";
 
@@ -105,6 +108,9 @@ export function createApp(overrides: Partial<AppDeps> = {}) {
   app.route("/", oauthRoutes);
   app.route("/", syncRoutes);
   app.route("/", modelsRoutes);
+  app.route("/", modelUsageRoutes);
+  app.route("/", askConversationRoutes);
+  app.route("/", askMessageRoutes);
   app.route("/", cockpitRoutes);
   app.route("/", onboardingRoutes);
   app.route("/", invitationRoutes);

@@ -1,18 +1,10 @@
 import { assertSafeModelEndpoint, assertSafeRedirect, type EndpointGuardOptions } from "./endpoint-guard";
 import { ModelGatewayError, type ModelGatewayErrorCode } from "./errors";
+import { logGatewayFailure, logPromptDebug, redactSecrets, type GatewayLogContext } from "./log";
+
+export { redactSecrets };
 
 export type GatewayFetch = typeof fetch;
-
-const KEY_PATTERN = /\b(sk-(?:or-v1-|ant-|proj-)?[A-Za-z0-9_-]{8,})\b/g;
-
-/** Strip API-key shaped tokens and the exact configured key from provider text. */
-export function redactSecrets(text: string, apiKey?: string): string {
-  let out = text.replace(KEY_PATTERN, "[redacted]");
-  if (apiKey && apiKey.length >= 4) {
-    out = out.split(apiKey).join("[redacted]");
-  }
-  return out;
-}
 
 export function mapHttpStatus(status: number, bodyText: string, apiKey?: string): ModelGatewayError {
   const safe = redactSecrets(bodyText, apiKey);
@@ -71,6 +63,8 @@ export type RequestOptions = {
   holdUntilRelease?: boolean;
   /** When set, validate URL/redirects (manual redirect, one safe hop). */
   endpointGuard?: EndpointGuardOptions;
+  /** Failure logs and the optional self-hosted prompt debug line. */
+  log?: GatewayLogContext;
 };
 
 export type GatewayResponse = {
@@ -131,7 +125,10 @@ export async function gatewayFetch(
       signal: controller.signal,
       redirect: options.endpointGuard ? "manual" : "follow",
     };
-    if (options.body !== undefined) init.body = options.body;
+    if (options.body !== undefined) {
+      logPromptDebug(options.log, options.body, options.apiKey);
+      init.body = options.body;
+    }
 
     let response: Response;
     try {
@@ -149,14 +146,26 @@ export async function gatewayFetch(
       if (err instanceof Error && err.name === "AbortError") {
         throw new ModelGatewayError("Request aborted or timed out", "provider_unavailable", true);
       }
+      const message = err instanceof Error ? err.message : "Network error";
+      logGatewayFailure({
+        provider: options.log?.provider ?? "model-gateway",
+        message,
+        apiKey: options.apiKey,
+      });
       throw new ModelGatewayError(
-        redactSecrets(err instanceof Error ? err.message : "Network error", options.apiKey),
+        redactSecrets(message, options.apiKey),
         "provider_unavailable",
         true,
       );
     }
     if (!response.ok) {
       const text = await response.text().catch(() => "");
+      logGatewayFailure({
+        provider: options.log?.provider ?? "model-gateway",
+        status: response.status,
+        message: `HTTP ${response.status}`,
+        apiKey: options.apiKey,
+      });
       throw mapHttpStatus(response.status, text, options.apiKey);
     }
     if (!options.holdUntilRelease) release();

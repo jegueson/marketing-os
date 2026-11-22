@@ -1,0 +1,27 @@
+id: out-of-scope-weather
+group: out_of_scope
+question: "What is the weather in Lisbon?"
+catalog:
+  - mock.spend
+labels:
+  mock.spend: "Spend"
+now: 2026-04-01T15:00:00.000Z
+model: gpt-test
+workspaceId: 00000000-0000-4000-8000-000000000010
+runId: 00000000-0000-4000-8000-000000000022
+reader:
+  metric: mock.spend
+  value: 2550
+  unit: "currency"
+  source: mock
+  definitionVersion: "1"
+  fetchedAt: 2026-04-01T15:00:00.000Z
+replay:
+  plan:
+    intent: out_of_scope
+    refusalMessage: "Weather is outside marketing metrics."
+    steps: []
+expect:
+  refusal: out_of_scope
+  message: "Weather is outside marketing metrics."
+  modelCalls: 1

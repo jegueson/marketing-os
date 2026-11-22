@@ -1,10 +1,11 @@
-import { mkdtemp, readFile } from "node:fs/promises";
+import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { decryptSecret, importMasterKey } from "@marketing-os/core";
+import { encryptSecret, importMasterKey } from "@marketing-os/core";
 import { createTestDatabase, type TestDatabase } from "@marketing-os/db/testing";
 import type { AuthAdmin } from "./auth-admin";
+import { runModelsMigrate } from "./models-migrate";
 import { runSetup, type SetupInput } from "./setup";
 
 const DATA_KEY = Buffer.alloc(32, 7).toString("base64");
@@ -99,17 +100,28 @@ describe("mos setup", () => {
       "select count(*)::int as n from metric_definitions where tenant_id is null",
     );
     expect(catalog[0]?.n).toBeGreaterThanOrEqual(8);
+    const { rows: creds } = await testDb.pg.query<{ n: number }>(
+      "select count(*)::int as n from model_credentials",
+    );
+    expect(creds[0]?.n).toBe(1);
   });
 
-  it("stores the model key with AES-GCM and never prints it", async () => {
+  it("seals the model key into the database and never writes a setup.json blob", async () => {
     const result = await setup();
     expect(JSON.stringify(result)).not.toContain("sk-or-v1-testkey");
-    const onDisk = JSON.parse(await readFile(result.configPath, "utf8")) as {
-      modelApiKey: { ciphertext: string; iv: string; keyVersion: number };
-    };
+    const onDisk = JSON.parse(await readFile(result.configPath, "utf8")) as Record<string, unknown>;
+    expect(onDisk.modelApiKey).toBeUndefined();
+    expect(onDisk.modelKeyFingerprint).toEqual(result.modelKeyFingerprint);
     expect(JSON.stringify(onDisk)).not.toContain("sk-or-v1-testkey");
-    const key = await importMasterKey(Buffer.from(DATA_KEY, "base64"));
-    expect(await decryptSecret(onDisk.modelApiKey, key)).toBe("sk-or-v1-testkey-123456");
+    expect(JSON.stringify(onDisk)).not.toContain("ciphertext");
+
+    const { rows } = await testDb.pg.query<{ fingerprint: string; ciphertext: string }>(
+      "select fingerprint, ciphertext from model_credentials where tenant_id = $1",
+      [result.tenantId],
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.fingerprint).toBe(result.modelKeyFingerprint);
+    expect(rows[0]!.ciphertext).not.toContain("sk-or-v1-testkey");
   });
 
   it("refuses weak keys and bad input", async () => {
@@ -123,5 +135,71 @@ describe("mos setup", () => {
     await expect(
       runSetup(cwd, input, { db: testDb.db, auth, dataKey: Buffer.alloc(16).toString("base64") }),
     ).rejects.toThrow(/32 bytes/);
+  });
+});
+
+describe("mos models migrate", () => {
+  let testDb: TestDatabase;
+  let auth: FakeAuthAdmin;
+  let cwd: string;
+
+  beforeEach(async () => {
+    testDb = await createTestDatabase();
+    auth = new FakeAuthAdmin(testDb);
+    cwd = await mkdtemp(path.join(tmpdir(), "mos-migrate-"));
+  });
+  afterEach(() => testDb.close());
+
+  it("inserts one credential row and scrubs the legacy blob", async () => {
+    const provisioned = await runSetup(
+      cwd,
+      input,
+      { db: testDb.db, auth, dataKey: DATA_KEY },
+    );
+    // Simulate a pre-T10 install: put the sealed blob back into setup.json and clear DB.
+    const key = await importMasterKey(Buffer.from(DATA_KEY, "base64"));
+    const blob = await encryptSecret("sk-or-v1-legacy-key-9999", key, 1);
+    const configPath = provisioned.configPath;
+    await writeFile(
+      configPath,
+      JSON.stringify(
+        {
+          deploymentMode: "self_hosted",
+          tenantId: provisioned.tenantId,
+          workspaceId: provisioned.workspaceId,
+          modelProvider: "openrouter",
+          modelKeyFingerprint: "stale",
+          modelApiKey: blob,
+          starterSkillsSeeded: false,
+        },
+        null,
+        2,
+      ),
+    );
+    await testDb.pg.query("delete from model_credentials");
+    await testDb.pg.query("delete from tenant_model_config");
+
+    const migrated = await runModelsMigrate(cwd, { db: testDb.db, dataKey: DATA_KEY });
+    expect(migrated.migrated).toBe(true);
+    expect(migrated.fingerprint).toHaveLength(12);
+
+    const onDisk = JSON.parse(await readFile(configPath, "utf8")) as Record<string, unknown>;
+    expect(onDisk.modelApiKey).toBeUndefined();
+    expect(JSON.stringify(onDisk)).not.toContain("ciphertext");
+    expect(onDisk.modelKeyFingerprint).toBe(migrated.fingerprint);
+
+    const { rows } = await testDb.pg.query<{ n: number }>(
+      "select count(*)::int as n from model_credentials where tenant_id = $1",
+      [provisioned.tenantId],
+    );
+    expect(rows[0]?.n).toBe(1);
+
+    const again = await runModelsMigrate(cwd, { db: testDb.db, dataKey: DATA_KEY });
+    expect(again.migrated).toBe(false);
+    const { rows: still } = await testDb.pg.query<{ n: number }>(
+      "select count(*)::int as n from model_credentials where tenant_id = $1",
+      [provisioned.tenantId],
+    );
+    expect(still[0]?.n).toBe(1);
   });
 });

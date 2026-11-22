@@ -1,0 +1,42 @@
+id: partial-spend
+group: partial_coverage
+question: "How much of spend is covered?"
+catalog:
+  - mock.spend
+labels:
+  mock.spend: "Spend"
+now: 2026-04-01T15:00:00.000Z
+model: gpt-test
+workspaceId: 00000000-0000-4000-8000-000000000010
+runId: 00000000-0000-4000-8000-000000000029
+reader:
+  metric: mock.spend
+  value: 2550
+  unit: "currency"
+  source: mock
+  definitionVersion: "1"
+  fetchedAt: 2026-04-01T15:00:00.000Z
+  coverage:
+    status: partial
+    requestedDays: 30
+    coveredDays: 10
+replay:
+  plan:
+    intent: answerable
+    steps:
+      - id: s1
+        tool: metric_value
+        metricKey: mock.spend
+        range: last_30_days
+  answer:
+    observations:
+      - "Value is {{o1}}."
+    interpretation: "Coverage is partial."
+expect:
+  observations:
+    - "Spend: 2550"
+  evidenceValue: 2550
+  warnings:
+    - "partial coverage"
+  freshness: live
+  modelCalls: 2

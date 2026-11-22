@@ -1,0 +1,34 @@
+id: freshness-empty
+group: freshness
+question: "How much did we spend when nothing is synced?"
+catalog:
+  - mock.spend
+labels:
+  mock.spend: "Spend"
+now: 2026-04-01T15:00:00.000Z
+model: gpt-test
+workspaceId: 00000000-0000-4000-8000-000000000010
+runId: 00000000-0000-4000-8000-000000000015
+reader:
+  metric: mock.spend
+  value: null
+  unit: null
+  source: null
+  definitionVersion: null
+  fetchedAt: null
+  status: no_data
+replay:
+  plan:
+    intent: answerable
+    steps:
+      - id: s1
+        tool: metric_value
+        metricKey: mock.spend
+        range: last_30_days
+expect:
+  refusal: no_data
+  message: "No tool results for this question."
+  warnings:
+    - "no data"
+  freshness: empty
+  modelCalls: 1

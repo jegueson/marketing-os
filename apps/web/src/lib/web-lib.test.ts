@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import nextConfig from "../../next.config";
 import { createApiClient } from "./api";
-import { nextLeadStatuses, pickWorkspace, safeNext, type Membership } from "./workspace";
+import { nextLeadStatuses, pickWorkspace, portalLinks, canManageModels, canUseAsk, safeNext, type Membership } from "./workspace";
 
 const memberships: Membership[] = [
   {
@@ -77,6 +77,27 @@ describe("workspace helpers", () => {
     expect(safeNext("//evil.test")).toBeNull();
     expect(safeNext("https://evil.test")).toBeNull();
     expect(safeNext(null)).toBeNull();
+  });
+
+  it("shows model settings only to roles that can manage models", () => {
+    expect(canManageModels("customer_admin")).toBe(true);
+    expect(canManageModels("platform_admin")).toBe(true);
+    expect(canManageModels("customer_user")).toBe(false);
+    expect(canManageModels("success_manager")).toBe(false);
+    const admin = portalLinks("w1", "customer_admin").map((link) => link.label);
+    const member = portalLinks("w1", "customer_user").map((link) => link.label);
+    expect(admin).toContain("Models");
+    expect(member).not.toContain("Models");
+    expect(portalLinks("w1", "customer_admin").find((link) => link.label === "Models")?.href).toBe(
+      "/portal/settings/models?ws=w1",
+    );
+    expect(portalLinks("w1", "customer_admin").map((link) => link.label)).not.toContain("Ask");
+    expect(portalLinks("w1", "customer_admin", { ask_marketing: false }).map((link) => link.label)).not.toContain("Ask");
+    expect(portalLinks("w1", "customer_admin", { ask_marketing: true }).map((link) => link.label)).toContain("Ask");
+    expect(portalLinks("w1", "customer_user", { ask_marketing: true }).map((link) => link.label)).toContain("Ask");
+    expect(portalLinks("w1", "success_manager", { ask_marketing: true }).map((link) => link.label)).not.toContain("Ask");
+    expect(canUseAsk("customer_user")).toBe(true);
+    expect(canUseAsk("success_manager")).toBe(false);
   });
 });
 

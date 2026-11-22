@@ -28,10 +28,12 @@ shared secret, so leave `SUPABASE_JWKS_URL` empty) and
 ### First-run setup
 
 `mos setup` creates the platform admin in Supabase Auth, the tenant, the
-default workspace and the admin membership. It stores the model API key
-encrypted under `MOS_DATA_KEY` in `apps/cli/.mos/setup.json`. Secrets come from
+default workspace and the admin membership. It seals the model API key into
+Postgres (`model_credentials`) under `MOS_DATA_KEY`. `.mos/setup.json` keeps
+only non-secret metadata (tenant ids, provider, fingerprint). Secrets come from
 environment variables only, so they never show up in shell history as
-arguments.
+arguments. Legacy installs that still have a `modelApiKey` blob in
+`.mos/setup.json` can move it with `mos models migrate`.
 
 ```bash
 eval "$(supabase status -o env | grep -E '^(API_URL|DB_URL|SERVICE_ROLE_KEY)=')"
@@ -43,6 +45,47 @@ pnpm mos setup --email=you@example.com --tenant="My Team" --slug=my-team
 ```
 
 Running it again is safe: it reports `created: false` and changes nothing.
+
+### Model: OpenRouter
+
+OpenRouter is the default provider. No base URL.
+
+```bash
+export MOS_MODEL_API_KEY=<OpenRouter key>
+pnpm mos setup --email=you@example.com --tenant="My Team" --slug=my-team --provider=openrouter
+```
+
+After sign-in, open **Models** (`/portal/settings/models`). Set **Default model** to a model id your key can call, for example `openai/gpt-4o-mini`. Choose **Save model settings**, then **Test connection**. The page shows a fingerprint, not the key.
+
+### Model: Ollama
+
+Ollama speaks the OpenAI-compatible API on a private address. The API refuses that address unless private endpoints are allowed. In `apps/api/.dev.vars`:
+
+```bash
+MOS_MODEL_ALLOW_PRIVATE_ENDPOINTS=1
+```
+
+Restart `pnpm dev` after changing that file. Pull a model, then seal a local placeholder key (at least 8 characters; Ollama does not use it as a secret):
+
+```bash
+ollama pull llama3.2
+export MOS_MODEL_API_KEY=ollama-local
+pnpm mos setup --email=you@example.com --tenant="My Team" --slug=my-team --provider=openai_compatible
+```
+
+In **Models**, set **Base URL** to `http://127.0.0.1:11434/v1`, set **Default model** to the name from `ollama list` (for example `llama3.2`), paste the same placeholder key, and save. **Test connection** must succeed before Ask can run. A blocked host returns `endpoint_blocked`.
+
+`MOS_MODEL_DEBUG=1` logs prompt bodies. Leave it unset. It is ignored when `MOS_DEPLOYMENT_MODE=cloud`.
+
+### Ask a question
+
+Ask is off in this release until you enable it. From a shell where `DATABASE_URL` is the local database:
+
+```bash
+psql "$DATABASE_URL" -c "update feature_flags set is_enabled = true where key = 'ask_marketing';"
+```
+
+Reload the portal. The steps from a signed-in admin to a first answer are in [ask-marketing.md](ask-marketing.md).
 
 ### Back up the data key
 

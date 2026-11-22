@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { EmptyState } from "@marketing-os/ui";
-import { pickWorkspace, type Me, type Membership } from "@/lib/workspace";
+import type { ApiClient } from "@/lib/api";
+import { pickWorkspace, portalLinks, type Me, type Membership } from "@/lib/workspace";
 
 /** Current workspace from `?ws=`, limited to the caller's memberships. */
 export function useWorkspace(me: Me): Membership | null {
@@ -33,14 +34,24 @@ export function WorkspaceSwitcher({ me, current }: { me: Me; current: Membership
   );
 }
 
-export function PortalNav({ workspaceId }: { workspaceId: string }) {
-  const q = `?ws=${encodeURIComponent(workspaceId)}`;
+export function PortalNav({
+  workspaceId,
+  role,
+  flags = {},
+}: {
+  workspaceId: string;
+  role: string;
+  flags?: Readonly<Record<string, boolean>>;
+}) {
+  const links = portalLinks(workspaceId, role, flags);
   return (
     <nav aria-label="Portal">
-      <Link href={`/portal${q}`}>Home</Link> |{" "}
-      <Link href={`/portal/onboarding${q}`}>Onboarding</Link> |{" "}
-      <Link href={`/portal/integrations${q}`}>Integrations</Link> |{" "}
-      <Link href={`/portal/cockpit${q}`}>Cockpit</Link>
+      {links.map((link, index) => (
+        <span key={link.href}>
+          {index > 0 ? " | " : null}
+          <Link href={link.href}>{link.label}</Link>
+        </span>
+      ))}
     </nav>
   );
 }
@@ -48,12 +59,26 @@ export function PortalNav({ workspaceId }: { workspaceId: string }) {
 /** Portal page frame: workspace switcher, nav, and an empty state for users with no workspace. */
 export function PortalFrame({
   me,
+  api,
   children,
 }: {
   me: Me;
+  api?: ApiClient;
   children: (workspace: Membership) => ReactNode;
 }) {
   const workspace = useWorkspace(me);
+  const workspaceId = workspace?.workspaceId ?? null;
+  const [flags, setFlags] = useState<Record<string, boolean>>({});
+  useEffect(() => {
+    if (!api || !workspaceId) return;
+    let cancelled = false;
+    void api<Record<string, boolean>>(`/api/v1/workspaces/${workspaceId}/features`).then((res) => {
+      if (!cancelled && res.success && res.data) setFlags(res.data);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [api, workspaceId]);
   if (!workspace) {
     return (
       <EmptyState
@@ -65,7 +90,7 @@ export function PortalFrame({
   return (
     <>
       <WorkspaceSwitcher me={me} current={workspace} />
-      <PortalNav workspaceId={workspace.workspaceId} />
+      <PortalNav workspaceId={workspace.workspaceId} role={workspace.role} flags={flags} />
       {children(workspace)}
     </>
   );

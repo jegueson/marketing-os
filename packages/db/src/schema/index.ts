@@ -8,3 +8,6 @@ export * from "./metrics";
 export * from "./oauth";
 export * from "./sync";
 export * from "./models";
+export * from "./usage";
+export * from "./budgets";
+export * from "./ask";

@@ -1,0 +1,36 @@
+id: sessions-last-30-days
+group: single_metric
+question: "How many sessions did we have?"
+catalog:
+  - mock.sessions
+labels:
+  mock.sessions: "Sessions"
+now: 2026-04-01T15:00:00.000Z
+model: gpt-test
+workspaceId: 00000000-0000-4000-8000-000000000010
+runId: 00000000-0000-4000-8000-000000000001
+reader:
+  metric: mock.sessions
+  value: 3000
+  unit: "count"
+  source: mock
+  definitionVersion: "1"
+  fetchedAt: 2026-04-01T15:00:00.000Z
+replay:
+  plan:
+    intent: answerable
+    steps:
+      - id: s1
+        tool: metric_value
+        metricKey: mock.sessions
+        range: last_30_days
+  answer:
+    observations:
+      - "Value is {{o1}}."
+    interpretation: "Within the selected range."
+expect:
+  observations:
+    - "Sessions: 3000"
+  interpretationIncludes: "selected range"
+  evidenceValue: 3000
+  modelCalls: 2

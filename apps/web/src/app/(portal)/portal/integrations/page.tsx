@@ -213,7 +213,7 @@ export default function IntegrationsPage() {
       <h1>Integrations</h1>
       <RequireAuth>
         {(auth) => (
-          <PortalFrame me={auth.me}>{(ws) => <Integrations auth={auth} ws={ws} />}</PortalFrame>
+          <PortalFrame me={auth.me} api={auth.api}>{(ws) => <Integrations auth={auth} ws={ws} />}</PortalFrame>
         )}
       </RequireAuth>
     </main>

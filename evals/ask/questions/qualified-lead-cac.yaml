@@ -1,0 +1,36 @@
+id: qualified-lead-cac
+group: ratio
+question: "What is our qualified lead CAC?"
+catalog:
+  - mock.qualified_lead_cac
+labels:
+  mock.qualified_lead_cac: "Qualified lead CAC"
+now: 2026-04-01T15:00:00.000Z
+model: gpt-test
+workspaceId: 00000000-0000-4000-8000-000000000010
+runId: 00000000-0000-4000-8000-000000000010
+reader:
+  metric: mock.qualified_lead_cac
+  value: 510
+  unit: "currency"
+  source: mock
+  definitionVersion: "1"
+  fetchedAt: 2026-04-01T15:00:00.000Z
+replay:
+  plan:
+    intent: answerable
+    steps:
+      - id: s1
+        tool: metric_value
+        metricKey: mock.qualified_lead_cac
+        range: last_30_days
+  answer:
+    observations:
+      - "Value is {{o1}}."
+    interpretation: "The ratio comes from the tool result."
+expect:
+  observations:
+    - "Qualified lead CAC: 510"
+  interpretationIncludes: "ratio"
+  evidenceValue: 510
+  modelCalls: 2

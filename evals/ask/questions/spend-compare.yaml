@@ -1,0 +1,43 @@
+id: spend-compare
+group: period_compare
+question: "How does spend compare with the previous period?"
+catalog:
+  - mock.spend
+labels:
+  mock.spend: "Spend"
+now: 2026-04-01T15:00:00.000Z
+model: gpt-test
+workspaceId: 00000000-0000-4000-8000-000000000010
+runId: 00000000-0000-4000-8000-000000000005
+reader:
+  metric: mock.spend
+  value: 2550
+  unit: "currency"
+  source: mock
+  definitionVersion: "1"
+  fetchedAt: 2026-04-01T15:00:00.000Z
+  compare:
+    current: 2550
+    previous: 2100
+    delta: 450
+replay:
+  plan:
+    intent: answerable
+    steps:
+      - id: s1
+        tool: metric_compare
+        metricKey: mock.spend
+        range: last_30_days
+        compareTo: previous_period
+  answer:
+    observations:
+      - "Current is {{o1}}."
+      - "Previous is {{o2}}."
+    interpretation: "Compared with the previous period."
+expect:
+  observations:
+    - "Spend: 2550"
+    - "Spend previous period: 2100"
+  interpretationIncludes: "previous period"
+  evidenceValue: 2550
+  modelCalls: 2

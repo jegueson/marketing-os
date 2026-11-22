@@ -29,7 +29,7 @@ type AuthState =
 
 const AuthContext = createContext<AuthState>({ status: "loading" });
 
-async function accessToken(): Promise<string | null> {
+export async function accessToken(): Promise<string | null> {
   const { data, error } = await getSupabase().auth.getSession();
   if (error) {
     console.error("Supabase session error", error);

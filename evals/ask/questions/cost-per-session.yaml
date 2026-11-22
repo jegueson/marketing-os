@@ -1,0 +1,36 @@
+id: cost-per-session
+group: ratio
+question: "What is our cost per session?"
+catalog:
+  - mock.cost_per_session
+labels:
+  mock.cost_per_session: "Cost per session"
+now: 2026-04-01T15:00:00.000Z
+model: gpt-test
+workspaceId: 00000000-0000-4000-8000-000000000010
+runId: 00000000-0000-4000-8000-000000000011
+reader:
+  metric: mock.cost_per_session
+  value: 25.5
+  unit: "currency"
+  source: mock
+  definitionVersion: "1"
+  fetchedAt: 2026-04-01T15:00:00.000Z
+replay:
+  plan:
+    intent: answerable
+    steps:
+      - id: s1
+        tool: metric_value
+        metricKey: mock.cost_per_session
+        range: last_30_days
+  answer:
+    observations:
+      - "Value is {{o1}}."
+    interpretation: "The ratio comes from the tool result."
+expect:
+  observations:
+    - "Cost per session: 25.5"
+  interpretationIncludes: "ratio"
+  evidenceValue: 25.5
+  modelCalls: 2

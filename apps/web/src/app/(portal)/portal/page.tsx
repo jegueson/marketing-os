@@ -12,7 +12,7 @@ export default function PortalHomePage() {
         {(auth) => (
           <>
             <p>Signed in as {auth.me.email}</p>
-            <PortalFrame me={auth.me}>
+            <PortalFrame me={auth.me} api={auth.api}>
               {(ws) => (
                 <p>
                   {ws.tenantName} · {ws.workspaceName} · your role: {ws.role}

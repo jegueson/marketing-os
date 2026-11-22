@@ -41,10 +41,13 @@ export type AppDeps = {
   provisioningHooks: ProvisioningHooks;
   /** Builds a model gateway from a resolved credential. Tests inject FakeGateway. */
   createModelGateway: ModelGatewayFactory;
+  askRateLimiter: (bindings: Env) => RateLimiter;
 };
 
 const PUBLIC_LEADS_PER_MINUTE = 5;
+const ASK_PER_MINUTE = 30;
 const fallbackLimiter = new MemoryRateLimiter(PUBLIC_LEADS_PER_MINUTE, 60_000);
+const askFallbackLimiter = new MemoryRateLimiter(ASK_PER_MINUTE, 60_000);
 const devOutbox = new InMemoryEmailSender();
 
 export const defaultDeps: AppDeps = {
@@ -75,4 +78,6 @@ export const defaultDeps: AppDeps = {
   oauthProviders: new Map<string, OAuthProvider>([["mock", createMockOAuthProvider()]]),
   provisioningHooks: noopProvisioningHooks,
   createModelGateway,
+  askRateLimiter: (bindings) =>
+    bindings.ASK_RATE_LIMITER ? new BindingRateLimiter(bindings.ASK_RATE_LIMITER) : askFallbackLimiter,
 };
