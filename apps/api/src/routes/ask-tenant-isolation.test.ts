@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { eq } from "drizzle-orm";
 import { auditEvents, connectors, connections, metricDefinitions, metricValues, usageLedger } from "@marketing-os/db";
+import { resolvePreset } from "@marketing-os/metrics/windows";
 import { FakeGateway } from "@marketing-os/model-gateway";
 import { createHarness, provisionCustomer, type Harness, type ProvisionedCustomer, type TestUser } from "../testing/harness";
 
@@ -96,8 +97,10 @@ describe("ask cross-tenant prompt leak", () => {
         widgets: [],
       },
     ]);
-    const windowStart = new Date("2026-10-21T00:00:00.000Z");
-    const windowEnd = new Date("2026-11-20T00:00:00.000Z");
+    // The stored window counts only when it sits inside last_30_days, which moves with the clock.
+    const range = resolvePreset("last_30_days", new Date());
+    const windowStart = range.start;
+    const windowEnd = range.end;
     await h.testDb.db.insert(metricValues).values([
       {
         tenantId: acme.tenantId,
