@@ -4,7 +4,7 @@ The open-source operating system for a marketing team. Connect the stack you alr
 
 The software is free to run. You bring a model key. Specialist help and managed hosting are separate paid offers. See [COMMERCIAL.md](COMMERCIAL.md).
 
-**Status: v0.1.0-alpha (Sprint 3).** A local install can connect the mock source, open the cockpit, and ask a question about that data. Ask stays off until you enable the `ask_marketing` flag. The release steps are in [docs/releases/v0.1.0-alpha.md](docs/releases/v0.1.0-alpha.md). See [docs/self-hosting.md](docs/self-hosting.md) and [docs/ask-marketing.md](docs/ask-marketing.md).
+**Status: v0.1.0-alpha (Sprint 3 exit) + Sprint 4 specialist configuration.** A local install can connect the mock source, open the cockpit, ask about that data, and run the weekly performance review as configuration. Ask and specialist config stay off until you enable their flags. See [docs/self-hosting.md](docs/self-hosting.md), [docs/ask-marketing.md](docs/ask-marketing.md), and [docs/specialist-configuration.md](docs/specialist-configuration.md).
 
 ## What you get
 
@@ -62,7 +62,10 @@ There is no self-service checkout. Cloud workspaces are provisioned after a conv
 | [connectors/mock](connectors/mock) | Deterministic mock connector |
 | [docs/adr/](docs/adr/README.md) | Architecture decisions |
 | [docs/ask-marketing.md](docs/ask-marketing.md) | Ask a question about synced metrics |
+| [docs/specialist-configuration.md](docs/specialist-configuration.md) | Skills, workflows, weekly review example |
+| [skills/WRITING.md](skills/WRITING.md) | How a specialist adds a skill without a deploy |
 | [docs/security/s3-review.md](docs/security/s3-review.md) | Sprint 3 security review |
+| [docs/security/s4-review.md](docs/security/s4-review.md) | Sprint 4 security review |
 | [docs/design/](docs/design/README.md) | Investor demo (`demo/investor` branch): design system, screens, demo script |
 | [Planning/prd_v4_addendum.md](Planning/prd_v4_addendum.md) | Daily workspace, intelligence, studio, influencer, automation integration |
 | [docs/architecture/sprint1-schema.md](docs/architecture/sprint1-schema.md) | Database contract for the first schema |

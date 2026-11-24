@@ -11,3 +11,6 @@ export * from "./models";
 export * from "./usage";
 export * from "./budgets";
 export * from "./ask";
+export * from "./config";
+export * from "./workflow-runs";
+export * from "./prompts";

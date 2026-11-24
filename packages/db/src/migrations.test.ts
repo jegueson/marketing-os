@@ -123,5 +123,9 @@ describe("migrations", () => {
       key: "ask_marketing",
       is_enabled: false,
     });
+    expect(flags.find((f) => f.key === "specialist_config")).toEqual({
+      key: "specialist_config",
+      is_enabled: false,
+    });
   });
 });

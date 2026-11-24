@@ -15,8 +15,11 @@
     "generate": "drizzle-kit generate"
   },
   "dependencies": {
+    "@marketing-os/config": "workspace:*",
     "@marketing-os/core": "workspace:*",
     "@marketing-os/metrics": "workspace:*",
+    "@marketing-os/prompts": "workspace:*",
+    "@marketing-os/schemas": "workspace:*",
     "drizzle-orm": "^0.44.5",
     "postgres": "^3.4.7"
   },

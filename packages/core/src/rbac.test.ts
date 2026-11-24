@@ -54,4 +54,17 @@ describe("rbac", () => {
     expect(roleHasPermission("platform_admin", "usage:read")).toBe(true);
     expect(roleHasPermission("customer_user", "usage:read")).toBe(false);
   });
+
+  it("lets a specialist write config and a customer admin only read it", () => {
+    expect(roleHasPermission("ai_specialist", "config:write")).toBe(true);
+    expect(roleHasPermission("ai_specialist", "config:read")).toBe(true);
+    expect(roleHasPermission("platform_admin", "config:write")).toBe(true);
+    expect(roleHasPermission("platform_admin", "config:read")).toBe(true);
+    expect(roleHasPermission("customer_admin", "config:read")).toBe(true);
+    expect(roleHasPermission("customer_admin", "config:write")).toBe(false);
+    expect(roleHasPermission("success_manager", "config:read")).toBe(true);
+    expect(roleHasPermission("success_manager", "config:write")).toBe(false);
+    expect(roleHasPermission("customer_user", "config:read")).toBe(false);
+    expect(roleHasPermission("customer_user", "config:write")).toBe(false);
+  });
 });

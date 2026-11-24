@@ -1,0 +1,21 @@
+name: weekly-performance-review
+version: 1.0.0
+description: Compare the primary KPIs with the previous period.
+domain: performance
+inputs: []
+contextRequirements:
+  - business_profile
+  - metrics
+tools:
+  - connector: mock
+    tool: list_campaigns
+instructions: >
+  Use only the metric values in the input. Do not invent numbers.
+  Summarise what changed between the current and previous period.
+outputs:
+  - name: summary
+    type: string
+    description: What changed
+    required: true
+evaluationSuite: weekly-performance-review
+riskClass: low

@@ -1,0 +1,29 @@
+name: weekly-performance-review
+version: 1.0.0
+description: Monday performance review against mock metrics.
+trigger:
+  type: manual
+steps:
+  - id: ctx
+    kind: load_context
+    include:
+      - business_profile
+  - id: spend
+    kind: read_metrics
+    metricKey: mock.spend
+    # Mock sync stores 30-day aggregates; coverRange needs the window inside the range.
+    range: last_30_days
+    compareToPrevious: true
+  - id: skill
+    kind: run_skill
+    skill: weekly-performance-review
+    version: 1.0.0
+    inputFrom:
+      - ctx
+      - spend
+  - id: report
+    kind: render_report
+    title: Weekly review
+    fromSteps:
+      - spend
+      - skill

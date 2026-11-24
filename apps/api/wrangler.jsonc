@@ -73,5 +73,12 @@
   ],
   "triggers": {
     "crons": ["*/5 * * * *"]
-  }
+  },
+  "workflows": [
+    {
+      "name": "config-workflow",
+      "binding": "CONFIG_WORKFLOW",
+      "class_name": "ConfigWorkflow"
+    }
+  ]
 }

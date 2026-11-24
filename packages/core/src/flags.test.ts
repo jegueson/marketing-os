@@ -20,4 +20,11 @@ describe("feature flags", () => {
     expect(platformFlagDefault("ask_marketing")).toBe(false);
     expect(isEnabled("ask_marketing")).toBe(false);
   });
+
+  it("keeps specialist_config off by default", () => {
+    expect(knownFlags).toContain("specialist_config");
+    expect(platformFlagDefault("specialist_config")).toBe(false);
+    expect(platformFlagDefault("not_a_real_flag")).toBe(false);
+    expect(isEnabled("specialist_config")).toBe(false);
+  });
 });

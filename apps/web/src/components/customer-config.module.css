@@ -1,0 +1,206 @@
+/* Specialist config panel — tokens aligned with docs/design/design-system.md (demo/investor). */
+.panel {
+  --cfg-bg: #0b1220;
+  --cfg-surface: rgb(17 25 43 / 0.72);
+  --cfg-surface-2: #172036;
+  --cfg-border: rgb(148 163 184 / 0.16);
+  --cfg-fg: #e8eef7;
+  --cfg-muted: #94a3b8;
+  --cfg-primary: #3b82f6;
+  --cfg-primary-strong: #2563eb;
+  --cfg-accent: #60a5fa;
+  --cfg-violet: #a78bfa;
+  --cfg-success: #34d399;
+  margin: 1.5rem 0;
+  padding: 1.25rem;
+  border-radius: 1rem;
+  border: 1px solid var(--cfg-border);
+  background:
+    radial-gradient(ellipse 80% 50% at 10% 0%, rgb(59 130 246 / 0.12), transparent 55%),
+    var(--cfg-bg);
+  color: var(--cfg-fg);
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  margin: 0.35rem 0 0;
+  color: var(--cfg-muted);
+  font-size: 0.875rem;
+  max-width: 42rem;
+}
+
+.tabs {
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border-radius: 0.75rem;
+  background: var(--cfg-surface-2);
+  border: 1px solid var(--cfg-border);
+  margin-bottom: 1rem;
+}
+
+.tab {
+  border: 0;
+  background: transparent;
+  color: var(--cfg-muted);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.45rem 0.85rem;
+  border-radius: 0.55rem;
+  cursor: pointer;
+}
+
+.tab[aria-selected="true"] {
+  background: var(--cfg-primary);
+  color: #fff;
+}
+
+.grid {
+  display: grid;
+  gap: 0.85rem;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 1rem;
+  border-radius: 1rem;
+  border: 1px solid var(--cfg-border);
+  background: var(--cfg-surface);
+  backdrop-filter: blur(14px);
+}
+
+.cardTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.icon {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.75rem;
+  background: rgb(59 130 246 / 0.18);
+  color: var(--cfg-accent);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.15rem 0.55rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: rgb(167 139 250 / 0.18);
+  color: var(--cfg-violet);
+}
+
+.badgePublished {
+  background: rgb(52 211 153 / 0.16);
+  color: var(--cfg-success);
+}
+
+.badgeDraft {
+  background: rgb(148 163 184 / 0.16);
+  color: var(--cfg-muted);
+}
+
+.cardName {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.meta {
+  margin: 0;
+  color: var(--cfg-muted);
+  font-size: 0.75rem;
+}
+
+.actions {
+  margin-top: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.runButton {
+  border: 0;
+  border-radius: 0.55rem;
+  padding: 0.45rem 0.8rem;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: var(--cfg-primary);
+  color: #fff;
+  cursor: pointer;
+}
+
+.runButton:hover:not(:disabled) {
+  background: var(--cfg-primary-strong);
+}
+
+.runButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.report {
+  margin-top: 1rem;
+  padding: 1rem;
+  border-radius: 1rem;
+  border: 1px solid var(--cfg-border);
+  background: var(--cfg-surface-2);
+}
+
+.reportTitle {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 650;
+}
+
+.reportMeta {
+  margin: 0 0 0.75rem;
+  color: var(--cfg-muted);
+  font-size: 0.75rem;
+}
+
+.reportBody {
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.empty {
+  margin: 0;
+  color: var(--cfg-muted);
+  font-size: 0.875rem;
+}

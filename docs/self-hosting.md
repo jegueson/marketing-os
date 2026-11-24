@@ -44,7 +44,7 @@ export MOS_MODEL_API_KEY=<OpenRouter key>
 pnpm mos setup --email=you@example.com --tenant="My Team" --slug=my-team
 ```
 
-Running it again is safe: it reports `created: false` and changes nothing.
+Running it again is safe: it reports `created: false` and changes nothing. A successful first run also seeds the starter skill library (weekly performance review) into the setup tenant and sets `starterSkillsSeeded` in `.mos/setup.json`.
 
 ### Model: OpenRouter
 
@@ -86,6 +86,21 @@ psql "$DATABASE_URL" -c "update feature_flags set is_enabled = true where key = 
 ```
 
 Reload the portal. The steps from a signed-in admin to a first answer are in [ask-marketing.md](ask-marketing.md).
+
+### Specialist configuration
+
+Skills and workflows are YAML you import into a workspace. The flag ships off:
+
+```bash
+psql "$DATABASE_URL" -c "update feature_flags set is_enabled = true where key = 'specialist_config';"
+```
+
+Start with the weekly performance review example and the writing guide:
+
+- Overview: [specialist-configuration.md](specialist-configuration.md)
+- Writing guide: [../skills/WRITING.md](../skills/WRITING.md)
+- Example pack: [../customer-configs/examples/weekly-performance-review/](../customer-configs/examples/weekly-performance-review/)
+- Starter skill: [../skills/starter/weekly-performance-review/skill.yaml](../skills/starter/weekly-performance-review/skill.yaml)
 
 ### Back up the data key
 
