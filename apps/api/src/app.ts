@@ -23,6 +23,12 @@ import { modelsRoutes } from "./routes/models";
 import { modelUsageRoutes } from "./routes/model-usage";
 import { askConversationRoutes } from "./routes/ask-conversations";
 import { askMessageRoutes } from "./routes/ask-messages";
+import { profileRoutes } from "./routes/profiles";
+import { skillRoutes } from "./routes/skills";
+import { agentRoutes } from "./routes/agents";
+import { workflowRoutes } from "./routes/workflows";
+import { workflowRunRoutes } from "./routes/workflow-runs";
+import { configImportRoutes } from "./routes/config-import";
 
 export type { HonoEnv } from "./context";
 
@@ -111,6 +117,12 @@ export function createApp(overrides: Partial<AppDeps> = {}) {
   app.route("/", modelUsageRoutes);
   app.route("/", askConversationRoutes);
   app.route("/", askMessageRoutes);
+  app.route("/", profileRoutes);
+  app.route("/", skillRoutes);
+  app.route("/", agentRoutes);
+  app.route("/", workflowRoutes);
+  app.route("/", workflowRunRoutes);
+  app.route("/", configImportRoutes);
   app.route("/", cockpitRoutes);
   app.route("/", onboardingRoutes);
   app.route("/", invitationRoutes);

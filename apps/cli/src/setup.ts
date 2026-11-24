@@ -12,6 +12,7 @@ import {
 import type { AuthAdmin } from "./auth-admin";
 import { seedPlatformMetrics } from "./metrics-seed";
 import { provisionInstall } from "./install";
+import { seedStarterSkills } from "./skills-seed";
 
 const DATA_KEY_VERSION = 1;
 
@@ -129,6 +130,17 @@ export async function runSetup(cwd: string, raw: SetupInput, deps: SetupDeps): P
     }
   } catch {
     // First run: no prior file.
+  }
+  if (!starterSkillsSeeded) {
+    const starterDir = fileURLToPath(new URL("../../../skills/starter", import.meta.url));
+    const seeded = await seedStarterSkills(deps.db, {
+      tenantId: install.tenantId,
+      workspaceId: install.workspaceId,
+      publishedBy: admin.id,
+      starterDir,
+    });
+    // True once the library is present — including a re-run that only skips.
+    starterSkillsSeeded = seeded.imported.length > 0 || seeded.skipped.length > 0;
   }
   const config: SetupConfigFile = {
     deploymentMode: input.deploymentMode,

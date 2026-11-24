@@ -1,0 +1,8 @@
+{
+  "mock.spend": {
+    "current": 2550,
+    "previous": 2000,
+    "delta": 550,
+    "unit": "EUR"
+  }
+}

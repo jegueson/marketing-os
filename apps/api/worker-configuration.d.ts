@@ -35,4 +35,8 @@ interface Env {
   /** Per-user limit for Ask message posts. */
   ASK_RATE_LIMITER?: RateLimit;
   EMAIL?: import("@marketing-os/core").CloudflareSendEmailBinding;
+  /** Published-definition runner (ADR-0026). Absent in some unit-test harnesses. */
+  CONFIG_WORKFLOW?: Workflow<
+    import("./src/workflows/params").ConfigWorkflowParams
+  >;
 }

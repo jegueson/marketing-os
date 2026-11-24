@@ -23,6 +23,13 @@ describe("OpenAPI client generation", () => {
     expect(doc.paths["/api/v1/workspaces/{workspaceId}/onboarding"]).toBeDefined();
     expect(doc.paths["/api/v1/invitations/accept"]).toBeDefined();
     expect(doc.paths["/api/v1/console/customers"]).toBeDefined();
+    expect(doc.paths["/api/v1/workspaces/{workspaceId}/profiles/{kind}"]).toBeDefined();
+    expect(doc.paths["/api/v1/workspaces/{workspaceId}/profiles/{kind}/publish"]).toBeDefined();
+    expect(doc.paths["/api/v1/workspaces/{workspaceId}/profiles/{kind}/versions"]).toBeDefined();
+    expect(doc.paths["/api/v1/workspaces/{workspaceId}/skills"]).toBeDefined();
+    expect(doc.paths["/api/v1/workspaces/{workspaceId}/skills/{skillId}/publish"]).toBeDefined();
+    expect(doc.paths["/api/v1/workspaces/{workspaceId}/agents"]).toBeDefined();
+    expect(doc.paths["/api/v1/workspaces/{workspaceId}/agents/{agentId}/publish"]).toBeDefined();
   });
 
   it("keeps a generated TypeScript schema checked in", () => {

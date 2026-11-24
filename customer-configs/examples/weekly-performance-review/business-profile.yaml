@@ -1,0 +1,13 @@
+companyDescription: Acme sells workflow software to mid-market marketing teams.
+businessModel: Subscription
+products:
+  - Acme Cloud
+markets:
+  - United Kingdom
+businessGoals:
+  - Grow pipeline
+marketingGoals:
+  - Hold CAC
+primaryKpis:
+  - mock.spend
+reportingCadence: weekly

@@ -1,0 +1,23 @@
+{
+  "name": "@marketing-os/config",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@marketing-os/core": "workspace:*",
+    "@marketing-os/schemas": "workspace:*",
+    "yaml": "^2.9.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "typescript": "^5.9.2",
+    "vitest": "^5.1.0"
+  }
+}

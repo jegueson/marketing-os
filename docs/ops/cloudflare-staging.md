@@ -39,7 +39,7 @@ A mock sync needs a signed-in workspace, one selected scope, and `MOS_DATA_KEY`.
 - R2: `mos-assets`, `mos-assets-preview`
 - Hyperdrive: `mos-supabase-staging` (`7e654828f81d45acb604296b2cfcc34e`) → `db.ilgxtbjjawnkvybvcsqm.supabase.co`
 - DB role: `mos_hyperdrive` (LOGIN, no BYPASSRLS, member of `app_api`)
-- Schema: migrations `0000`–`0016`. Remote versions match the local filenames. `0012` is timestamped after `0015` because that migration was recorded on retry; the statements do not depend on each other.
+- Schema: migrations `0000`–`0021`. Remote versions match the local filenames. `0012` is timestamped after `0015` because that migration was recorded on retry; the statements do not depend on each other. `0017`–`0021` (Ask permissions, model credentials, usage ledger, budgets, conversations) were applied on 2026-11-20 with `supabase db push`.
 
 ## Worker bindings and vars
 
@@ -57,6 +57,22 @@ Web (inlined at build time, all public):
   `STAGING_SUPABASE_PUBLISHABLE_KEY`, `STAGING_TURNSTILE_SITE_KEY`.
 
 GitHub Actions secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` are set. The deploy workflow runs on a push to `main` that touches `apps/`, `packages/`, `connectors/`, or `deploy/`. It does not apply database migrations.
+
+## Ask smoke (S3-T37)
+
+API deploy `c1990f6f-8c3b-43b2-8d44-f0993dcc8006` is the `v0.1.0-alpha` tree (`badb2c0` on `demo/investor`). `ASK_RATE_LIMITER` is bound at 30 requests / 60 seconds. `GET /api/v1/workspaces/{id}/ask/conversations` returns 401 without a token. `/readyz` reports the database ok.
+
+Not smoked yet:
+
+- The web Worker is still the previous build. `GET /portal/ask` returns 404 until `apps/web` is deployed with `STAGING_API_URL`, `STAGING_SUPABASE_URL`, and `STAGING_SUPABASE_PUBLISHABLE_KEY`.
+- No model API key was available in this session. Ask returns 422 `model_not_configured` until a tenant key is saved. Do not commit the key. Seal it from the Models page, or with `mos setup`, using the existing `MOS_DATA_KEY`.
+- `ask_marketing` is still false. Enable it only for the smoke tenant:
+
+```bash
+psql "$DATABASE_URL" -c "update feature_flags set is_enabled = true where key = 'ask_marketing';"
+```
+
+Then sign in, connect Mock, select one scope, sync, open Ask, and ask `How much did we spend?`. The observation must be a tool number such as `mock.spend: 2550`, not a model-invented figure.
 
 ## Not yet configured
 

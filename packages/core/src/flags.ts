@@ -15,6 +15,7 @@ export const knownFlags = [
   "connector.linear",
   "connector.notion",
   "ask_marketing",
+  "specialist_config",
 ] as const;
 
 export type KnownFlag = (typeof knownFlags)[number];
@@ -30,6 +31,7 @@ const platformDefaults: Record<KnownFlag, boolean> = {
   "connector.linear": false,
   "connector.notion": false,
   ask_marketing: false,
+  specialist_config: false,
 };
 
 /** Seeded platform default for a known flag. Unknown keys are false. */

@@ -86,6 +86,19 @@ describe("mos setup", () => {
     expect(kpis.find((row) => row.key === "Spend")?.target).toBeNull();
     const { rows: audit } = await testDb.pg.query("select 1 from audit_events where event_type = 'setup.completed'");
     expect(audit).toHaveLength(1);
+
+    const { rows: skills } = await testDb.pg.query<{ name: string; status: string; active_version: number }>(
+      `select draft->>'name' as name, status, active_version
+         from skills
+        where tenant_id = $1 and workspace_id = $2
+        order by draft->>'name'`,
+      [result.tenantId, result.workspaceId],
+    );
+    expect(skills).toEqual([
+      { name: "weekly-performance-review", status: "published", active_version: 1 },
+    ]);
+    const onDisk = JSON.parse(await readFile(result.configPath, "utf8")) as { starterSkillsSeeded: boolean };
+    expect(onDisk.starterSkillsSeeded).toBe(true);
   });
 
   it("is safe to run twice", async () => {
@@ -104,6 +117,21 @@ describe("mos setup", () => {
       "select count(*)::int as n from model_credentials",
     );
     expect(creds[0]?.n).toBe(1);
+
+    const { rows: skillRows } = await testDb.pg.query<{ n: number }>(
+      "select count(*)::int as n from skills where draft->>'name' = 'weekly-performance-review'",
+    );
+    expect(skillRows[0]?.n).toBe(1);
+    const { rows: versions } = await testDb.pg.query<{ n: number }>(
+      `select count(*)::int as n from config_versions
+        where resource_type = 'skill'
+          and resource_id = (
+            select id from skills where draft->>'name' = 'weekly-performance-review' limit 1
+          )`,
+    );
+    expect(versions[0]?.n).toBe(1);
+    const onDisk = JSON.parse(await readFile(second.configPath, "utf8")) as { starterSkillsSeeded: boolean };
+    expect(onDisk.starterSkillsSeeded).toBe(true);
   });
 
   it("seals the model key into the database and never writes a setup.json blob", async () => {

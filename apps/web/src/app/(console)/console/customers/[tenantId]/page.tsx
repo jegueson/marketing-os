@@ -6,6 +6,8 @@ import { useState } from "react";
 import { Button, ErrorState, Table } from "@marketing-os/ui";
 import { RequireAuth, type ReadyAuth } from "@/components/auth";
 import { useApi, View } from "@/components/api-view";
+import { CustomerConfig } from "@/components/customer-config";
+import { CustomerProfiles } from "@/components/customer-profiles";
 
 type Overview = {
   tenant: { id: string; name: string; status: string };
@@ -77,6 +79,9 @@ function Customer({ auth, tenantId }: { auth: ReadyAuth; tenantId: string }) {
           ) : (
             <p>No discovery record.</p>
           )}
+
+          <CustomerProfiles api={auth.api} workspaces={o.workspaces} />
+          <CustomerConfig api={auth.api} workspaces={o.workspaces} />
 
           <h2>Onboarding</h2>
           {o.onboarding.map((p) => (

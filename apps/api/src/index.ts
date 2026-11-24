@@ -6,8 +6,11 @@ import { keyRingFromConfig } from "./lib/credentials";
 import { consumeBatch } from "./events/consumer";
 import { relayOutbox, type OutboxMessage } from "./events/relay";
 import { consumeSyncBatch, enqueueDueSyncs, type SyncMessage } from "./sync/engine";
+import { ConfigWorkflow } from "./workflows/config-workflow";
 
 const app = createApp();
+
+export { ConfigWorkflow };
 
 export default {
   fetch: app.fetch,
