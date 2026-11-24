@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { EmptyState, ErrorState } from "@marketing-os/ui";
-import type { ApiClient, Envelope } from "@/lib/api";
+import type { ApiClient, Envelope } from "../lib/api";
 
 export type Loaded<T> =
   | { status: "loading" }

@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { ErrorState } from "@marketing-os/ui";
-import { useApi } from "@/components/api-view";
-import type { ApiClient } from "@/lib/api";
+import { useApi } from "./api-view";
+import type { ApiClient } from "../lib/api";
 import styles from "./customer-config.module.css";
 
 type WorkspaceRef = { id: string; name: string };
