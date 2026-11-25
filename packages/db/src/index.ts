@@ -11,6 +11,37 @@ export {
   type TenantModelSettingsView,
 } from "./model-credentials";
 export { insertUsageLedger, recordUsage, type UsageLedgerInsert } from "./usage-ledger";
+export { writeKnowledgeDocument } from "./knowledge";
+export {
+  insertRecommendation,
+  listRecommendations,
+  type RecommendationDraft,
+  type StoredRecommendation,
+} from "./recommendations";
+export { insertWorkload, listWorkload, type StoredWorkload, type WorkloadDraft } from "./workload";
+export {
+  decideApproval,
+  expireApprovals,
+  insertApproval,
+  type ApprovalDecisionName,
+  type ApprovalDraft,
+  type DecideApprovalInput,
+  type StoredApproval,
+} from "./approvals";
+export {
+  completeActionExecution,
+  failActionExecution,
+  prepareActionExecution,
+  reserveAction,
+  type ActionReserve,
+  type PreparedExecution,
+  type StoredActionIntent,
+} from "./action-intents";
+export { readActionOutcome, type ActionOutcome } from "./action-outcomes";
+export {
+  createKnowledgeRetrieveStore,
+  insertKnowledgeAudit,
+} from "./knowledge-retrieve";
 export {
   publishProfile,
   rollbackProfile,

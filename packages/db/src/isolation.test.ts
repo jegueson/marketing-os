@@ -10,6 +10,9 @@ import {
   configVersions,
   workflows,
   workflowRuns,
+  knowledgeChunks,
+  knowledgeDocuments,
+  knowledgeSources,
   connections,
   connectors,
   dataScopes,
@@ -530,6 +533,114 @@ describe("specialist config workflows", () => {
     expect(seenByB).toEqual([]);
     const seenByA = await withContext(t.db, ctxA(), (tx) => tx.select().from(workflowRuns));
     expect(seenByA).toHaveLength(1);
+  });
+});
+
+describe("specialist config knowledge", () => {
+  const embedding1536 = (seed = 0.01): number[] =>
+    Array.from({ length: 1536 }, (_, i) => (i === 0 ? seed : 0));
+
+  it("cross-tenant chunk read returns no row", async () => {
+    await withContext(t.db, ctxA(), async (tx) => {
+      const [source] = await tx
+        .insert(knowledgeSources)
+        .values({
+          tenantId: ids.tenantA,
+          workspaceId: ids.workspaceA,
+          name: "brand-notes",
+          kind: "r2_upload",
+          locator: "notes/brand.md",
+        })
+        .returning();
+      const [document] = await tx
+        .insert(knowledgeDocuments)
+        .values({
+          tenantId: ids.tenantA,
+          workspaceId: ids.workspaceA,
+          sourceId: source!.id,
+          title: "Brand notes",
+          objectKey: `${ids.tenantA}/notes/brand.md`,
+        })
+        .returning();
+      await tx.insert(knowledgeChunks).values({
+        tenantId: ids.tenantA,
+        workspaceId: ids.workspaceA,
+        sourceId: source!.id,
+        documentId: document!.id,
+        chunkIndex: 0,
+        content: "Tenant A secret sentence about spend.",
+        embedding: embedding1536(0.11),
+      });
+    });
+
+    const seenByB = await withContext(t.db, ctxB(), async (tx) => ({
+      sources: await tx.select().from(knowledgeSources),
+      documents: await tx.select().from(knowledgeDocuments),
+      chunks: await tx.select().from(knowledgeChunks),
+    }));
+    expect(seenByB).toEqual({ sources: [], documents: [], chunks: [] });
+
+    const seenByA = await withContext(t.db, ctxA(), (tx) => tx.select().from(knowledgeChunks));
+    expect(seenByA).toHaveLength(1);
+    expect(seenByA[0]?.content).toContain("Tenant A secret");
+  });
+
+  it("refuses a chunk for another tenant", async () => {
+    const sourceId = crypto.randomUUID();
+    const documentId = crypto.randomUUID();
+    await withContext(t.db, ctxB(), async (tx) => {
+      await tx.insert(knowledgeSources).values({
+        id: sourceId,
+        tenantId: ids.tenantB,
+        workspaceId: ids.workspaceB,
+        name: "other-notes",
+        kind: "notion",
+        locator: "page-abc",
+      });
+      await tx.insert(knowledgeDocuments).values({
+        id: documentId,
+        tenantId: ids.tenantB,
+        workspaceId: ids.workspaceB,
+        sourceId,
+        title: "Other",
+        objectKey: `${ids.tenantB}/page-abc`,
+      });
+    });
+
+    await expect(
+      withContext(t.db, ctxA(), (tx) =>
+        tx.insert(knowledgeChunks).values({
+          tenantId: ids.tenantB,
+          workspaceId: ids.workspaceB,
+          sourceId,
+          documentId,
+          chunkIndex: 0,
+          content: "should not land",
+          embedding: embedding1536(0.22),
+        }),
+      ),
+    ).rejects.toSatisfy(
+      (err: unknown) =>
+        isRlsDenial(err) || /workspace does not belong to tenant/.test(errorText(err)),
+    );
+    const left = await t.pg.query("select 1 from public.knowledge_chunks where tenant_id = $1", [
+      ids.tenantB,
+    ]);
+    expect(left.rows).toEqual([]);
+  });
+
+  it("refuses to update or delete a chunk", async () => {
+    const blocked = (err: unknown) =>
+      /knowledge_chunks are immutable|permission denied/i.test(errorText(err));
+    await expect(
+      withContext(t.db, ctxA(), (tx) => tx.update(knowledgeChunks).set({ content: "mutated" })),
+    ).rejects.toSatisfy(blocked);
+    await expect(withContext(t.db, ctxA(), (tx) => tx.delete(knowledgeChunks))).rejects.toSatisfy(
+      blocked,
+    );
+    await expect(
+      t.pg.exec("update public.knowledge_chunks set content = 'mutated'"),
+    ).rejects.toSatisfy(blocked);
   });
 });
 

@@ -49,18 +49,32 @@ function parseId(value: string | undefined, label: string): string {
 }
 
 /** Resolves `:workspaceId` to a tenant and checks membership or staff assignment. */
-export function requireWorkspace(permission: Permission) {
+export function requireWorkspace(permission: Permission, options?: { missingAccess?: "not_found" }) {
   return createMiddleware<HonoEnv>(async (c, next) => {
     const workspaceId = parseId(c.req.param("workspaceId"), "workspace id");
     const [row] = await run(c, userContext(c.get("principal")), (tx) =>
       selectRows<AccessRow>(tx, sql`select * from app.workspace_access(${workspaceId}::uuid)`),
     );
-    if (!row) throw new NotFoundError("Workspace not found");
-    const access = decide(c, row, workspaceId);
+    if (!row) throw new NotFoundError(options?.missingAccess === "not_found" ? undefined : "Workspace not found");
+    const access = resolveAccess(c, row, workspaceId, options?.missingAccess === "not_found");
     assertPermission(access.role, permission);
     c.set("access", access);
     await next();
   });
+}
+
+function resolveAccess(
+  c: AppContext,
+  row: AccessRow,
+  workspaceId: string,
+  conceal: boolean,
+): TenantAccess {
+  try {
+    return decide(c, row, workspaceId);
+  } catch (error) {
+    if (conceal && error instanceof ForbiddenError) throw new NotFoundError();
+    throw error;
+  }
 }
 
 /** Console routes on `:tenantId`: only assigned staff or a platform admin. */

@@ -127,5 +127,9 @@ describe("migrations", () => {
       key: "specialist_config",
       is_enabled: false,
     });
+    expect(flags.find((f) => f.key === "managed_work")).toEqual({
+      key: "managed_work",
+      is_enabled: false,
+    });
   });
 });

@@ -5,6 +5,7 @@ import type { CockpitView } from "@marketing-os/schemas";
 import { EmptyState, Table } from "@marketing-os/ui";
 import { RequireAuth, type ReadyAuth } from "@/components/auth";
 import { useApi, View } from "@/components/api-view";
+import { WorkloadAbsorbed } from "@/components/workload-absorbed";
 import { PortalFrame } from "@/components/workspace";
 import type { Membership } from "@/lib/workspace";
 
@@ -58,6 +59,7 @@ function Cockpit({ auth, ws }: { auth: ReadyAuth; ws: Membership }) {
             <h2>Leads</h2>
             <KpiTable cards={view.widgets.leads} />
           </section>
+          <WorkloadAbsorbed rows={view.workload} />
           <h2>Data health</h2>
           {view.data_health.length === 0 ? (
             <p>No sources connected.</p>

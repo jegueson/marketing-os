@@ -3785,6 +3785,287 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workspaces/{workspaceId}/approvals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    workspaceId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Workspace approvals */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApprovalListResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiFailure"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiFailure"];
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiFailure"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/approvals/{approvalId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    workspaceId: string;
+                    approvalId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description One approval */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApprovalResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiFailure"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiFailure"];
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiFailure"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/approvals/{approvalId}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    workspaceId: string;
+                    approvalId: string;
+                };
+                cookie?: never;
+            };
+            /** @description Approval decision */
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["ApprovalDecision"];
+                };
+            };
+            responses: {
+                /** @description Recorded decision */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApprovalDecidedResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiFailure"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiFailure"];
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiFailure"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiFailure"];
+                    };
+                };
+                /** @description Validation error */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiFailure"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspaceId}/recommendations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    workspaceId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Workspace recommendations */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["RecommendationListResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiFailure"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiFailure"];
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiFailure"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces/{workspaceId}/cockpit": {
         parameters: {
             query?: never;
@@ -5266,7 +5547,7 @@ export interface components {
         };
         ConfigImportResult: {
             /** @enum {string} */
-            kind: "skill" | "workflow";
+            kind: "skill" | "workflow" | "policy";
             /** Format: uuid */
             id: string;
             name: string;
@@ -5274,8 +5555,83 @@ export interface components {
         };
         ConfigImportBody: {
             /** @enum {string} */
-            kind: "skill" | "workflow";
+            kind: "skill" | "workflow" | "policy";
             source: string;
+        };
+        ApprovalListResponse: {
+            /** @enum {boolean} */
+            success: true;
+            data: components["schemas"]["Approval"][];
+            error: null;
+            meta: {
+                [key: string]: unknown;
+            } | null;
+        };
+        Approval: {
+            /** Format: uuid */
+            id: string;
+            action: string;
+            /** @enum {string} */
+            riskLevel: "low" | "medium" | "high";
+            evidence: string;
+            expectedImpact: string;
+            /** @enum {string} */
+            status: "pending" | "approved" | "rejected" | "expired" | "cancelled";
+            comment: string | null;
+            /** Format: uuid */
+            requesterId: string;
+            /** Format: uuid */
+            reviewerId: string | null;
+            /** Format: date-time */
+            expiresAt: string;
+            /** Format: date-time */
+            decidedAt: string | null;
+        };
+        ApprovalResponse: {
+            /** @enum {boolean} */
+            success: true;
+            data: components["schemas"]["Approval"];
+            error: null;
+            meta: {
+                [key: string]: unknown;
+            } | null;
+        };
+        ApprovalDecidedResponse: {
+            /** @enum {boolean} */
+            success: true;
+            data: components["schemas"]["Approval"];
+            error: null;
+            meta: {
+                [key: string]: unknown;
+            } | null;
+        };
+        ApprovalDecision: {
+            /** @enum {string} */
+            decision: "approved" | "rejected";
+            comment: string;
+        };
+        RecommendationListResponse: {
+            /** @enum {boolean} */
+            success: true;
+            data: components["schemas"]["Recommendation"][];
+            error: null;
+            meta: {
+                [key: string]: unknown;
+            } | null;
+        };
+        Recommendation: {
+            /** Format: uuid */
+            id: string;
+            problem: string;
+            evidence: string;
+            proposedAction: string;
+            expectedImpact: string;
+            /** @enum {string} */
+            confidence: "low" | "medium" | "high";
+            /** @enum {string} */
+            effort: "low" | "medium" | "high";
+            /** @enum {string|null} */
+            approvalStatus: "pending" | "approved" | "rejected" | "expired" | "cancelled" | null;
         };
         CockpitResponse: {
             /** @enum {boolean} */
@@ -5313,6 +5669,7 @@ export interface components {
                 id: string;
                 message: string;
             }[];
+            workload: components["schemas"]["WorkloadItem"][];
             data_health: components["schemas"]["DataHealthItem"][];
             empty_state: {
                 message: string;
@@ -5330,6 +5687,12 @@ export interface components {
             freshness: "live" | "stale" | "empty" | "error";
             definitionVersion: string | null;
             widgets: ("executive" | "performance" | "funnel" | "leads")[];
+        };
+        WorkloadItem: {
+            /** @enum {string} */
+            category: "reporting" | "media_optimization" | "seo" | "crm_operations" | "creative_production" | "research" | "tracking_qa" | "project_coordination";
+            baselineHours: number;
+            hoursAbsorbed: number;
         };
         DataHealthItem: {
             /** Format: uuid */

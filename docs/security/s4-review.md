@@ -36,5 +36,5 @@ Date: 2026-11-24. Scope: local stack only. No release tag.
 
 - The weekly review example reads `last_30_days` so mock sync's 30-day aggregates satisfy `coverRange` (ADR-0024).
 - Test-run still executes the interpreter in-process; Cloudflare `ConfigWorkflow` is covered by the Miniflare parity test, not this journey.
-- Knowledge retrieval returns an empty chunk list until S4-T16.
+- Knowledge retrieval is tenant-scoped; a foreign source id yields no text and writes `knowledge.foreign_source_denied`.
 - No staging deploy or live model call in this review.

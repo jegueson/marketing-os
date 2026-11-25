@@ -54,6 +54,11 @@ export function canUseAsk(role: string): boolean {
   return isRole(role) && roleHasPermission(role, "ask:use");
 }
 
+/** Approvals are limited to roles with `approvals:decide`. The nav also requires `managed_work`. */
+export function canDecideApprovals(role: string): boolean {
+  return isRole(role) && roleHasPermission(role, "approvals:decide");
+}
+
 /** Portal links for one workspace. Models and Ask stay hidden without permission and flag. */
 export function portalLinks(
   workspaceId: string,
@@ -69,6 +74,9 @@ export function portalLinks(
   ];
   if (flags.ask_marketing === true && canUseAsk(role)) {
     links.push({ href: `/portal/ask${q}`, label: "Ask" });
+  }
+  if (flags.managed_work === true && canDecideApprovals(role)) {
+    links.push({ href: `/portal/approvals${q}`, label: "Approvals" });
   }
   if (canManageModels(role)) {
     links.push({ href: `/portal/settings/models${q}`, label: "Models" });

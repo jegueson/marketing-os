@@ -9,6 +9,7 @@ import { ConsoleFrame } from "@/components/console-frame";
 import { useApi, View } from "@/components/api-view";
 import { CustomerConfig } from "@/components/customer-config";
 import { CustomerProfiles } from "@/components/customer-profiles";
+import { AuditLog, type AuditLogRow } from "@/components/audit-log";
 
 type Overview = {
   tenant: { id: string; name: string; status: string };
@@ -28,12 +29,10 @@ type Overview = {
   invitations: { id: string; email: string; status: string; expiresAt: string }[];
 };
 
-type AuditRow = { id: number; eventType: string; actorRole: string | null; createdAt: string };
-
 function Customer({ auth, tenantId }: { auth: ReadyAuth; tenantId: string }) {
   const base = `/api/v1/console/customers/${tenantId}`;
   const [state, reload] = useApi<Overview>(auth.api, base);
-  const [audit] = useApi<AuditRow[]>(auth.api, `${base}/audit`);
+  const [audit] = useApi<AuditLogRow[]>(auth.api, `${base}/audit`);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
 
   async function invitation(id: string, action: "resend" | "revoke") {
@@ -124,19 +123,7 @@ function Customer({ auth, tenantId }: { auth: ReadyAuth; tenantId: string }) {
             ])}
           />
 
-          <h2>Audit log</h2>
-          <View state={audit}>
-            {(rows) => (
-              <Table
-                headers={["When", "Event", "Actor role"]}
-                rows={rows.map((r) => [
-                  new Date(r.createdAt).toLocaleString(),
-                  r.eventType,
-                  r.actorRole ?? "system",
-                ])}
-              />
-            )}
-          </View>
+          <View state={audit}>{(rows) => <AuditLog rows={rows} />}</View>
         </>
       )}
     </View>

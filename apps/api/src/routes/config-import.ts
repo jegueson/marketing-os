@@ -22,7 +22,7 @@ const workspaceParams = z.object({ workspaceId: uuidPathParam("workspaceId") });
 
 const importBodySchema = z
   .object({
-    kind: z.enum(["skill", "workflow"]),
+    kind: z.enum(["skill", "workflow", "policy"]),
     source: z.string().min(1).max(100_000),
   })
   .strict()
@@ -30,7 +30,7 @@ const importBodySchema = z
 
 const importResultSchema = z
   .object({
-    kind: z.enum(["skill", "workflow"]),
+    kind: z.enum(["skill", "workflow", "policy"]),
     id: z.string().uuid(),
     name: z.string(),
     version: z.number().int(),
@@ -68,33 +68,23 @@ configImportRoutes.openapi(importRoute, async (c) => {
   const workspace = workspaceId(access);
   const body = c.req.valid("json");
 
-  let result: { kind: "skill" | "workflow"; id: string; name: string; version: number };
+  let result: { kind: "skill" | "workflow" | "policy"; id: string; name: string; version: number };
   try {
     result = await run(c, tenantContext(c), async (tx) => {
-      const imported =
-        body.kind === "skill"
-          ? await importConfigYaml(tx, {
-              tenantId: access.tenantId,
-              workspaceId: workspace,
-              publishedBy: principal.userId,
-              kind: "skill",
-              source: body.source,
-              catalog: await loadToolCatalog(
-                c.get("deps").connectors,
-                access.tenantId,
-                workspace,
-              ),
-            })
-          : await importConfigYaml(tx, {
-              tenantId: access.tenantId,
-              workspaceId: workspace,
-              publishedBy: principal.userId,
-              kind: "workflow",
-              source: body.source,
-            });
+      const imported = await importConfigYaml(tx, {
+        tenantId: access.tenantId,
+        workspaceId: workspace,
+        publishedBy: principal.userId,
+        kind: body.kind,
+        source: body.source,
+        ...(body.kind === "skill"
+          ? {
+              catalog: await loadToolCatalog(c.get("deps").connectors, access.tenantId, workspace),
+            }
+          : {}),
+      });
       await recordAudit(tx, {
-        eventType:
-          body.kind === "skill" ? "config.skill_imported" : "config.workflow_imported",
+        eventType: `config.${body.kind}_imported`,
         tenantId: access.tenantId,
         workspaceId: workspace,
         actorId: principal.userId,

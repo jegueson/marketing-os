@@ -102,6 +102,36 @@ Start with the weekly performance review example and the writing guide:
 - Example pack: [../customer-configs/examples/weekly-performance-review/](../customer-configs/examples/weekly-performance-review/)
 - Starter skill: [../skills/starter/weekly-performance-review/skill.yaml](../skills/starter/weekly-performance-review/skill.yaml)
 
+### Managed work and Linear approval
+
+Recommendations, approvals, and the Linear write stay behind `managed_work`. The flag ships **off**:
+
+```bash
+psql "$DATABASE_URL" -c "update feature_flags set is_enabled = true where key = 'managed_work';"
+```
+
+Default autonomy is still observe. The first write is Linear `create_issue`, and only after a matching policy and a human decision before `expires_at`.
+
+| Piece | Path |
+| --- | --- |
+| Example policy | [../customer-configs/examples/linear-create-issue/policy.yaml](../customer-configs/examples/linear-create-issue/policy.yaml) |
+| Example workflow | [../customer-configs/examples/linear-create-issue/workflow.yaml](../customer-configs/examples/linear-create-issue/workflow.yaml) |
+| Threshold-only workflow | [../customer-configs/examples/spend-threshold/workflow.yaml](../customer-configs/examples/spend-threshold/workflow.yaml) |
+| Connector | [../connectors/linear/](../connectors/linear/) |
+| Security checklist | [security/s5-review.md](security/s5-review.md) |
+
+Path for a new installer:
+
+1. Enable `specialist_config` and `managed_work` as above.
+2. Sign in as `ai_specialist` (or `platform_admin`). Import the policy YAML with `POST /api/v1/workspaces/{workspaceId}/config/import` and `{ "kind": "policy", "source": "<yaml>" }`.
+3. Import the Linear workflow the same way with `"kind": "workflow"`. A run that reaches the action step stops in `awaiting_approval` and does not call Linear.
+4. A user with `approvals:decide` opens **Approvals** in the portal, reads what will change, and posts approve or reject with a comment.
+5. Only an approved, unexpired decision may create one Linear issue. Replay of the same idempotency key returns the stored external id and does not create a second issue.
+
+Linear OAuth token exchange is not wired yet. Unit and journey tests use a fake client. Do not dial `api.linear.app` from those tests. Platform approval status for the Linear app is in [connectors/approvals.md](connectors/approvals.md).
+
+The API journey that proves this path is `e2e/tests/sprint5.api.test.ts`. It passes for both `MOS_DEPLOYMENT_MODE=self_hosted` and `cloud`.
+
 ### Back up the data key
 
 `MOS_DATA_KEY` encrypts connector credentials and the model key. Losing it makes those secrets unreadable. There is no recovery path in the database. Store a copy in the same password manager you use for the Supabase service role key, outside the git repository and outside `.dev.vars`.
@@ -160,3 +190,5 @@ Single machine, no high availability. You own backups. Miniflare approximates
 Queues, R2 and Cron. `wrangler dev` does not run the outbox cron by itself.
 Start the API with `pnpm --filter @marketing-os/api exec wrangler dev --test-scheduled`
 and trigger it with `curl "http://127.0.0.1:8787/__scheduled?cron=*/5+*+*+*+*"`.
+
+An optional same-topology stack lives at [../deploy/docker-compose.yml](../deploy/docker-compose.yml). The documented default remains Supabase CLI + `wrangler dev` + `next dev` above.

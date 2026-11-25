@@ -55,6 +55,11 @@ definitions:
     version: "1"
     label: HubSpot qualified deals
     unit: count
+  - key: rest.value
+    source: rest
+    version: "1"
+    label: REST endpoint value
+    unit: count
   - key: mock.qualified_leads
     source: mock
     version: "1"

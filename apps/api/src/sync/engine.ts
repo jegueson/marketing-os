@@ -3,6 +3,7 @@ import { GA4_METRICS } from "@marketing-os/connector-google-analytics";
 import { GOOGLE_ADS_METRICS } from "@marketing-os/connector-google-ads";
 import { HUBSPOT_METRICS } from "@marketing-os/connector-hubspot";
 import { META_METRICS } from "@marketing-os/connector-meta";
+import { REST_METRICS } from "@marketing-os/connector-rest";
 import { ConnectorError, type Connector } from "@marketing-os/connector-sdk";
 import { assessDataHealth, planBackfillWindows, planSyncJobs, type KeyRing } from "@marketing-os/core";
 import {
@@ -36,6 +37,7 @@ function metricsFor(slug: string): readonly string[] {
   if (slug === "google-ads") return GOOGLE_ADS_METRICS;
   if (slug === "hubspot") return HUBSPOT_METRICS;
   if (slug === "meta") return META_METRICS;
+  if (slug === "rest") return REST_METRICS;
   return MOCK_METRICS;
 }
 

@@ -4,14 +4,14 @@ The open-source operating system for a marketing team. Connect the stack you alr
 
 The software is free to run. You bring a model key. Specialist help and managed hosting are separate paid offers. See [COMMERCIAL.md](COMMERCIAL.md).
 
-**Status: v0.1.0-alpha (Sprint 3 exit) + Sprint 4 specialist configuration.** A local install can connect the mock source, open the cockpit, ask about that data, and run the weekly performance review as configuration. Ask and specialist config stay off until you enable their flags. See [docs/self-hosting.md](docs/self-hosting.md), [docs/ask-marketing.md](docs/ask-marketing.md), and [docs/specialist-configuration.md](docs/specialist-configuration.md).
+**Status: v0.2.0 (Sprint 5 exit).** A local install can connect the mock source, open the cockpit, ask about that data, run the weekly performance review as configuration, and take a Linear `create_issue` through policy → approval → outcome. Ask, specialist config, and managed work stay off until you enable their flags. See [docs/self-hosting.md](docs/self-hosting.md), [docs/ask-marketing.md](docs/ask-marketing.md), [docs/specialist-configuration.md](docs/specialist-configuration.md), and [docs/releases/v0.2.0.md](docs/releases/v0.2.0.md).
 
 ## What you get
 
 - A marketing cockpit across performance, organic, leads, retention and data health.
 - Ask Marketing: questions answered from your data, with sources and freshness.
 - A specialist console for skills, agents, prompts, workflows and automations.
-- Governed actions. The default is to observe. Writes require a policy and, when the policy says so, an approval.
+- Governed actions. The default is to observe. Writes require a policy and, when the policy says so, an approval. The first write is Linear `create_issue` after a human decision ([example policy](customer-configs/examples/linear-create-issue/policy.yaml)).
 - Your model: OpenRouter by default, or any OpenAI-compatible endpoint, OpenAI, or Anthropic.
 
 ## Who it is for
@@ -60,12 +60,15 @@ There is no self-service checkout. Cloud workspaces are provisioned after a conv
 | [apps/cli](apps/cli) | `mos` setup / deploy CLI |
 | [packages/](packages) | core, db, ui, schemas, connector-sdk, metrics, api-client, ask, prompts, model-gateway |
 | [connectors/mock](connectors/mock) | Deterministic mock connector |
+| [connectors/linear](connectors/linear) | Linear `create_issue` (approval-gated write) |
+| [customer-configs/examples/linear-create-issue/](customer-configs/examples/linear-create-issue/) | Example Linear policy and workflow |
 | [docs/adr/](docs/adr/README.md) | Architecture decisions |
 | [docs/ask-marketing.md](docs/ask-marketing.md) | Ask a question about synced metrics |
-| [docs/specialist-configuration.md](docs/specialist-configuration.md) | Skills, workflows, weekly review example |
+| [docs/specialist-configuration.md](docs/specialist-configuration.md) | Skills, workflows, weekly review, Linear approval path |
 | [skills/WRITING.md](skills/WRITING.md) | How a specialist adds a skill without a deploy |
 | [docs/security/s3-review.md](docs/security/s3-review.md) | Sprint 3 security review |
 | [docs/security/s4-review.md](docs/security/s4-review.md) | Sprint 4 security review |
+| [docs/security/s5-review.md](docs/security/s5-review.md) | Sprint 5 security review |
 | [docs/design/](docs/design/README.md) | Investor demo (`demo/investor` branch): design system, screens, demo script |
 | [Planning/prd_v4_addendum.md](Planning/prd_v4_addendum.md) | Daily workspace, intelligence, studio, influencer, automation integration |
 | [docs/architecture/sprint1-schema.md](docs/architecture/sprint1-schema.md) | Database contract for the first schema |

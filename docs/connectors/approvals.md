@@ -26,7 +26,7 @@ https://marketing-os-api.<account>.workers.dev/api/v1/integrations/oauth/callbac
 | Google Ads developer token | n/a | submitted | Test-account token request filed. Production token pending Google review. | 2026-10-28 |
 | Meta app + App Review | see above | submitted | App created in Meta developer portal. Marketing API product added. App Review plan drafted for `ads_read`. Business verification queued. | 2026-10-28 |
 | HubSpot app | see above | submitted | OAuth app draft created for CRM read scopes. Redirect URI placeholder until staging host is stable. | 2026-10-28 |
-| Linear OAuth app | see above | submitted | Application started for issue read (write in Sprint 5). | 2026-10-28 |
+| Linear OAuth app | see above | submitted | Application started for issue read. Sprint 5 ships approval-gated `create_issue`; OAuth token exchange is not wired yet. | 2026-11-25 |
 | Notion OAuth integration | see above | submitted | Public integration draft for knowledge sync (Sprint 4). | 2026-10-28 |
 
 Status values: `not_started` | `submitted` | `in_review` | `approved` | `blocked`.

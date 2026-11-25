@@ -29,6 +29,8 @@ import { agentRoutes } from "./routes/agents";
 import { workflowRoutes } from "./routes/workflows";
 import { workflowRunRoutes } from "./routes/workflow-runs";
 import { configImportRoutes } from "./routes/config-import";
+import { approvalRoutes } from "./routes/approvals";
+import { recommendationRoutes } from "./routes/recommendations";
 
 export type { HonoEnv } from "./context";
 
@@ -123,6 +125,8 @@ export function createApp(overrides: Partial<AppDeps> = {}) {
   app.route("/", workflowRoutes);
   app.route("/", workflowRunRoutes);
   app.route("/", configImportRoutes);
+  app.route("/", approvalRoutes);
+  app.route("/", recommendationRoutes);
   app.route("/", cockpitRoutes);
   app.route("/", onboardingRoutes);
   app.route("/", invitationRoutes);

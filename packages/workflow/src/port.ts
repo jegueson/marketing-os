@@ -2,7 +2,13 @@
  * Durable automation port (ADR-0012 / ADR-0026).
  * Domain code calls this. Cloudflare Workflows live only in the adapter.
  */
-export type WorkflowRunStatus = "queued" | "running" | "succeeded" | "failed" | "cancelled";
+export type WorkflowRunStatus =
+  | "queued"
+  | "running"
+  | "succeeded"
+  | "failed"
+  | "cancelled"
+  | "awaiting_approval";
 
 export type WorkflowTriggerKind = "manual" | "schedule";
 
@@ -13,8 +19,8 @@ export type StartWorkflowInput = {
   workflowId: string;
   /** Active version number on that row. */
   workflowVersion: number;
-  /** Sprint 4 only starts manual runs. Schedule rows exist; the runner refuses them until later. */
-  trigger: "manual";
+  /** Manual starts from the test-run route. Schedule starts from the clock tick. */
+  trigger: "manual" | "schedule";
 };
 
 export type WorkflowStepResult = {
@@ -31,7 +37,7 @@ export type WorkflowReport = {
 };
 
 export type WorkflowOutcome = {
-  status: "succeeded" | "failed";
+  status: "succeeded" | "failed" | "awaiting_approval";
   errorCode: string | null;
   steps: WorkflowStepResult[];
   report: WorkflowReport | null;

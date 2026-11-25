@@ -27,4 +27,16 @@ describe("feature flags", () => {
     expect(platformFlagDefault("not_a_real_flag")).toBe(false);
     expect(isEnabled("specialist_config")).toBe(false);
   });
+
+  it("keeps connector.linear off by default", () => {
+    expect(knownFlags).toContain("connector.linear");
+    expect(platformFlagDefault("connector.linear")).toBe(false);
+    expect(isEnabled("connector.linear")).toBe(false);
+  });
+
+  it("keeps managed_work off by default", () => {
+    expect(knownFlags).toContain("managed_work");
+    expect(platformFlagDefault("managed_work")).toBe(false);
+    expect(isEnabled("managed_work")).toBe(false);
+  });
 });

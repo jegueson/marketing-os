@@ -113,6 +113,17 @@ const revokeInvitationRoute = defineRoute({
 consoleRoutes.use(base, requirePrincipal);
 consoleRoutes.use(`${base}/*`, requirePrincipal);
 
+const hiddenPayloadKeys = new Set(["prompt", "promptBody", "prompt_body"]);
+
+/** The list shows stored status and external id. A prompt body stays in the row and off the response. */
+function withoutPrompt<T extends { payload: unknown }>(row: T): T {
+  if (!row.payload || typeof row.payload !== "object" || Array.isArray(row.payload)) return row;
+  const payload = Object.fromEntries(
+    Object.entries(row.payload as Record<string, unknown>).filter(([key]) => !hiddenPayloadKeys.has(key)),
+  );
+  return { ...row, payload };
+}
+
 /** Staff reading one assigned tenant: staff flag for staff-only tables, tenant for tenant tables. */
 function assignedTenantContext(c: AppContext): DbContext {
   return { tenantId: c.get("access").tenantId, userId: c.get("principal").userId, staff: true };
@@ -208,7 +219,7 @@ consoleRoutes.openapi(customerAuditRoute, async (c) => {
       .limit(limit)
       .offset((page - 1) * limit);
     const [counted] = await tx.select({ total: count() }).from(auditEvents).where(where);
-    return { items, total: counted?.total ?? 0 };
+    return { items: items.map(withoutPrompt), total: counted?.total ?? 0 };
   });
   return c.json(ok(items, { total, page, limit }), 200);
 });

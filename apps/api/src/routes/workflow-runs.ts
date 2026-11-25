@@ -2,6 +2,7 @@ import { z } from "@hono/zod-openapi";
 import { AppError, NotFoundError, ok, ValidationError } from "@marketing-os/core";
 import {
   completeWorkflowRun,
+  createKnowledgeRetrieveStore,
   getWorkflowRun,
   loadBudgetSnapshot,
   loadPublishedBrandProfile,
@@ -15,6 +16,7 @@ import {
   type Database,
   type StoredWorkflowRun,
 } from "@marketing-os/db";
+import { retrieveKnowledge } from "@marketing-os/knowledge";
 import { withLedger, type UsageLedgerEntry, type UsageSink } from "@marketing-os/model-gateway";
 import { interpretWorkflow, type WorkflowDeps, type WorkflowMetricReader } from "@marketing-os/workflow";
 import type { MetricReader } from "@marketing-os/ask";
@@ -23,7 +25,7 @@ import { requireWorkspace } from "../auth/access";
 import { requireConfigEnabled } from "../auth/config-flag";
 import { run, tenantContext, type AppContext } from "../context";
 import { keyRingFromConfig } from "../lib/credentials";
-import { recordAudit } from "../lib/events";
+import { recordAudit as writeAuditEvent } from "../lib/events";
 import { createDrizzleMetricReader } from "../ask/drizzle-metric-reader";
 import {
   apiSuccessSchema,
@@ -232,6 +234,44 @@ async function buildDeps(
     async loadPublishedSkill(tenantId, wsId, name, version) {
       return withContext(db, { tenantId, userId: null, staff: false }, (tx: Database) =>
         loadPublishedSkill(tx, { tenantId, workspaceId: wsId, name, version }),
+      );
+    },
+    async retrieveKnowledge(input) {
+      return withContext(db, { tenantId: input.tenantId, userId: null, staff: false }, async (tx) =>
+        retrieveKnowledge(
+          {
+            tenantId: input.tenantId,
+            workspaceId: input.workspaceId,
+            sourceIds: input.sourceIds,
+            query: input.query,
+            model: credential.defaultModel ?? "text-embedding-3-small",
+          },
+          {
+            gateway: withLedger(appDeps.createModelGateway(credential, config, c.env), sink, {
+              tenantId: input.tenantId,
+              workspaceId: input.workspaceId,
+              userId: c.get("principal").userId,
+              runId: input.runId,
+              purpose: "knowledge",
+              promptName: null,
+              promptVersion: null,
+            }),
+            store: createKnowledgeRetrieveStore(tx),
+          },
+        ),
+      );
+    },
+    async recordAudit(event) {
+      await withContext(db, { tenantId: event.tenantId, userId: null, staff: false }, (tx) =>
+        writeAuditEvent(tx, {
+          eventType: event.eventType,
+          tenantId: event.tenantId,
+          workspaceId: event.workspaceId,
+          resourceType: event.resourceType,
+          resourceId: event.resourceId,
+          payload: event.payload ?? {},
+          actorId: c.get("principal").userId,
+        }),
       );
     },
   };

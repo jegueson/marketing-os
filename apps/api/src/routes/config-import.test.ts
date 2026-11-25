@@ -18,6 +18,13 @@ const skillSource = readFileSync(
   ),
   "utf8",
 );
+const policySource = readFileSync(
+  join(
+    dirname(fileURLToPath(import.meta.url)),
+    "../../../../customer-configs/examples/linear-create-issue/policy.yaml",
+  ),
+  "utf8",
+);
 
 describe("config import API", () => {
   let h: Harness;
@@ -87,5 +94,31 @@ describe("config import API", () => {
         })
       ).status,
     ).toBe(422);
+  });
+
+  it("publishes the example Linear policy and rejects requireApproval false", async () => {
+    await boot();
+    await h.testDb.pg.query(
+      "update feature_flags set is_enabled = true where key = 'specialist_config'",
+    );
+    const path = `/api/v1/workspaces/${acme.workspaceId}/config/import`;
+    const denied = await h.call(path, {
+      method: "POST",
+      token: specialist.token,
+      body: { kind: "policy", source: policySource.replace("requireApproval: true", "requireApproval: false") },
+    });
+    expect(denied.status).toBe(422);
+
+    const imported = await h.call<{ kind: string; name: string; version: number }>(path, {
+      method: "POST",
+      token: specialist.token,
+      body: { kind: "policy", source: policySource },
+    });
+    expect(imported.status).toBe(200);
+    expect(imported.body.data).toMatchObject({
+      kind: "policy",
+      name: "linear-create-issue",
+      version: 1,
+    });
   });
 });
