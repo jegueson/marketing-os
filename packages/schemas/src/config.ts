@@ -201,6 +201,29 @@ const renderReportStepSchema = z
   })
   .strict();
 
+const actionStepSchema = z
+  .object({
+    id: stepIdSchema,
+    kind: z.literal("action"),
+    connector: slugSchema,
+    tool: z
+      .string()
+      .trim()
+      .min(1)
+      .max(80)
+      .regex(/^[a-z][a-z0-9]*(_[a-z0-9]+)*$/),
+  })
+  .strict();
+
+const thresholdStepSchema = z
+  .object({
+    id: stepIdSchema,
+    kind: z.literal("threshold"),
+    metricKey: askMetricKeySchema,
+    above: z.number().finite(),
+  })
+  .strict();
+
 export const workflowStepSchema = z
   .discriminatedUnion("kind", [
     loadContextStepSchema,
@@ -208,6 +231,8 @@ export const workflowStepSchema = z
     retrieveKnowledgeStepSchema,
     runSkillStepSchema,
     renderReportStepSchema,
+    actionStepSchema,
+    thresholdStepSchema,
   ])
   .openapi("WorkflowStep");
 

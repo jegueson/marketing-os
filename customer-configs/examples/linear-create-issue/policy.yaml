@@ -1,0 +1,10 @@
+name: linear-create-issue
+version: 1.0.0
+connector: linear
+action: create_issue
+riskClass: medium
+requireApproval: true
+allowedRoles:
+  - customer_admin
+  - ai_specialist
+expiresInHours: 72

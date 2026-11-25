@@ -37,13 +37,32 @@ After setup, the setup tenant already has the published weekly review skill. To 
 
 The API journey that proves this path is `e2e/tests/sprint4.api.test.ts`. The security checklist is [security/s4-review.md](security/s4-review.md).
 
+## Linear create_issue example
+
+The Sprint 5 exit path. Enable `managed_work` as in [self-hosting.md](self-hosting.md). A new installer finds the files here:
+
+| Piece | Path |
+| --- | --- |
+| Policy | [customer-configs/examples/linear-create-issue/policy.yaml](../customer-configs/examples/linear-create-issue/policy.yaml) |
+| Workflow | [customer-configs/examples/linear-create-issue/workflow.yaml](../customer-configs/examples/linear-create-issue/workflow.yaml) |
+| Threshold-only workflow | [customer-configs/examples/spend-threshold/workflow.yaml](../customer-configs/examples/spend-threshold/workflow.yaml) |
+
+1. Import the policy with `"kind": "policy"`. `requireApproval` must stay `true`. A false value publishes nothing.
+2. Import the Linear workflow with `"kind": "workflow"`. The action step stops in `awaiting_approval` and does not call Linear.
+3. A customer admin with `approvals:decide` opens **Approvals**, then posts approve or reject with a comment.
+4. An approved, unexpired decision may create one Linear issue. Replay keeps the stored external id.
+
+The API journey that proves this path is `e2e/tests/sprint5.api.test.ts`. The security checklist is [security/s5-review.md](security/s5-review.md).
+
 ## Add a skill without a deploy
 
-Follow [skills/WRITING.md](../skills/WRITING.md). Short version: edit YAML that matches `skillDefinitionSchema`, import, publish, point a workflow `run_skill` step at `name` + `version`. Do not put prompt bodies in run rows, audit payloads, or logs.
+Follow [skills/WRITING.md](../skills/WRITING.md). Short version: edit YAML that matches `skillDefinitionSchema`, import, publish, point a workflow `run_skill` step at `name` + `version`. Do not put prompt bodies in run rows, audit payloads, or logs. Do not add an `action` field on a skill tool.
 
 ## Limits in this sprint
 
-- Autonomy stays `observe`. No connector actions from a workflow.
-- Manual test-runs only. Stored schedules do not fire yet.
-- Knowledge retrieval returns an empty chunk list until the knowledge tasks land.
-- No release tag was cut for this documentation pass.
+- Default autonomy stays `observe`. Unattended `controlled_autonomy` is denied. The first write is Linear `create_issue` after approval.
+- A workflow action step stops for approval and does not call the connector from the interpreter.
+- HTTP test-runs stay manual-only. The worker cron does not call `tickSchedule` yet, so published schedules do not fire in production.
+- Knowledge retrieval returns cited chunks for the caller's tenant only; a foreign source id yields no text and an audit event.
+- Linear OAuth token exchange is not wired. Tests use a fake client.
+- Cut tag `v0.2.0` only after the Sprint 5 security review is recorded. See [releases/v0.2.0.md](releases/v0.2.0.md).

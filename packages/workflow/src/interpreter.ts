@@ -35,14 +35,52 @@ export type WorkflowMetricReader = {
   }>;
 };
 
+export type KnowledgeCitation = {
+  sourceId: string;
+  documentId: string;
+  chunkIndex: number;
+  content: string;
+  score: number;
+};
+
+export type KnowledgeRetrieveResult = {
+  chunks: KnowledgeCitation[];
+  deniedSourceIds: string[];
+};
+
+export type WorkflowAuditEvent = {
+  tenantId: string;
+  workspaceId: string;
+  eventType: string;
+  resourceType?: string;
+  resourceId?: string;
+  payload?: Record<string, unknown>;
+};
+
 /**
- * Sprint 4 never calls connector actions. Tests pass a guard that throws if invoked.
+ * Sprint 4 never calls connector actions. An action step stops for approval.
+ * Tests pass a guard that throws if the connector is invoked.
  */
+export type WorkflowRecommendation = {
+  tenantId: string;
+  workspaceId: string;
+  problem: string;
+  evidence: string;
+  proposedAction: string;
+  expectedImpact: string;
+  confidence: "low" | "medium" | "high";
+  effort: "low" | "medium" | "high";
+};
+
 export type WorkflowDeps = {
   model: string;
   gateway: ModelGateway;
   reader: WorkflowMetricReader;
   listActions: () => Promise<unknown>;
+  /** External write. Action steps must not call this. */
+  executeAction: () => Promise<unknown>;
+  /** Threshold steps write one recommendation when the metric is over the line. */
+  writeRecommendation: (draft: WorkflowRecommendation) => Promise<void>;
   loadBusinessProfile: (tenantId: string, workspaceId: string) => Promise<BusinessProfile | null>;
   loadBrandProfile: (tenantId: string, workspaceId: string) => Promise<BrandProfile | null>;
   loadPublishedSkill: (
@@ -51,6 +89,15 @@ export type WorkflowDeps = {
     name: string,
     version: string,
   ) => Promise<SkillDefinition | null>;
+  /** Tenant-scoped knowledge retrieval. Foreign source ids must yield no text. */
+  retrieveKnowledge: (input: {
+    tenantId: string;
+    workspaceId: string;
+    sourceIds: string[];
+    query: string;
+  }) => Promise<KnowledgeRetrieveResult>;
+  /** Audit sink for denied foreign knowledge sources (and future step events). */
+  recordAudit: (event: WorkflowAuditEvent) => Promise<void>;
 };
 
 export type InterpretScope = {
@@ -150,6 +197,29 @@ async function readMetrics(
   });
 }
 
+async function retrieveKnowledgeStep(
+  step: Extract<WorkflowStep, { kind: "retrieve_knowledge" }>,
+  scope: InterpretScope,
+): Promise<{ chunks: KnowledgeCitation[] }> {
+  const result = await scope.deps.retrieveKnowledge({
+    tenantId: scope.tenantId,
+    workspaceId: scope.workspaceId,
+    sourceIds: step.sourceIds,
+    query: step.query,
+  });
+  for (const sourceId of result.deniedSourceIds) {
+    await scope.deps.recordAudit({
+      tenantId: scope.tenantId,
+      workspaceId: scope.workspaceId,
+      eventType: "knowledge.foreign_source_denied",
+      resourceType: "knowledge_source",
+      resourceId: sourceId,
+      payload: { sourceId, query: step.query },
+    });
+  }
+  return { chunks: result.chunks };
+}
+
 async function runSkill(
   step: Extract<WorkflowStep, { kind: "run_skill" }>,
   scope: InterpretScope,
@@ -215,6 +285,22 @@ function formatSkillOutput(output: unknown): string {
   return asData(output);
 }
 
+function formatKnowledgeOutput(output: unknown): string {
+  if (output === null || typeof output !== "object" || !("chunks" in output)) {
+    return "knowledge: []";
+  }
+  const chunks = (output as { chunks: unknown }).chunks;
+  if (!Array.isArray(chunks) || chunks.length === 0) return "knowledge: []";
+  return chunks
+    .map((chunk) => {
+      if (chunk && typeof chunk === "object" && "content" in chunk) {
+        return String((chunk as { content: unknown }).content);
+      }
+      return asData(chunk);
+    })
+    .join("\n");
+}
+
 function formatStepOutput(stepId: string, entry: { kind: WorkflowStep["kind"]; output: unknown } | undefined): string {
   if (!entry) return `${stepId}: missing`;
   switch (entry.kind) {
@@ -222,6 +308,8 @@ function formatStepOutput(stepId: string, entry: { kind: WorkflowStep["kind"]; o
       return formatMetricOutput(entry.output);
     case "run_skill":
       return formatSkillOutput(entry.output);
+    case "retrieve_knowledge":
+      return formatKnowledgeOutput(entry.output);
     case "render_report":
       return typeof entry.output === "object" && entry.output && "body" in entry.output
         ? String((entry.output as WorkflowReport).body)
@@ -229,6 +317,35 @@ function formatStepOutput(stepId: string, entry: { kind: WorkflowStep["kind"]; o
     default:
       return `${stepId}: ${asData(entry.output)}`;
   }
+}
+
+/** Writes the fixture recommendation only when the metric is strictly over the line. */
+async function runThreshold(
+  step: Extract<WorkflowStep, { kind: "threshold" }>,
+  scope: InterpretScope,
+): Promise<{ fired: boolean }> {
+  const reading = await scope.deps.reader.metricValue({
+    tenantId: scope.tenantId,
+    workspaceId: scope.workspaceId,
+    metricKey: step.metricKey,
+    range: "last_30_days",
+  });
+  if (reading.status !== "ok" || reading.value == null || reading.value <= step.above) {
+    return { fired: false };
+  }
+  const problem =
+    step.metricKey === "mock.spend" ? "Spend rose without a lead change." : `${step.metricKey} crossed the threshold.`;
+  await scope.deps.writeRecommendation({
+    tenantId: scope.tenantId,
+    workspaceId: scope.workspaceId,
+    problem,
+    evidence: `${step.metricKey} is ${reading.value}.`,
+    proposedAction: "Review the spend change.",
+    expectedImpact: "The specialist gets one tracked task.",
+    confidence: "medium",
+    effort: "low",
+  });
+  return { fired: true };
 }
 
 function renderReport(
@@ -241,7 +358,7 @@ function renderReport(
 
 /**
  * Runs one published definition in-process.
- * Schedule triggers fail closed. Connector actions are never invoked.
+ * An action step stops in awaiting_approval and does not call the connector.
  * Pass `runStep: (name, fn) => step.do(name, fn)` from Cloudflare Workflows.
  */
 export async function interpretWorkflow(
@@ -253,9 +370,6 @@ export async function interpretWorkflow(
   const parsed = workflowDefinitionSchema.safeParse(definition);
   if (!parsed.success) {
     return failed("invalid_definition");
-  }
-  if (parsed.data.trigger.type === "schedule") {
-    return failed("trigger_not_active");
   }
 
   const steps: WorkflowStepResult[] = [];
@@ -271,12 +385,15 @@ export async function interpretWorkflow(
           case "read_metrics":
             return readMetrics(step, scope);
           case "retrieve_knowledge":
-            // Chunks arrive in S4-T16. Until then the step succeeds with an empty list.
-            return { chunks: [] };
+            return retrieveKnowledgeStep(step, scope);
           case "run_skill":
             return runSkill(step, scope, prior);
           case "render_report":
             return { ...renderReport(step, prior) };
+          case "action":
+            return { status: "awaiting_approval" as const, connector: step.connector, tool: step.tool };
+          case "threshold":
+            return runThreshold(step, scope);
           default: {
             const _exhaustive: never = step;
             throw Object.assign(new Error(`Unsupported step ${JSON.stringify(_exhaustive)}`), {
@@ -291,6 +408,9 @@ export async function interpretWorkflow(
       }
       prior.set(step.id, { kind: step.kind, output });
       steps.push({ stepId: step.id, kind: step.kind, status: "ok", output, errorCode: null });
+      if (step.kind === "action") {
+        return { status: "awaiting_approval", errorCode: null, steps, report };
+      }
     } catch (error) {
       const errorCode = resolveErrorCode(error);
       steps.push({

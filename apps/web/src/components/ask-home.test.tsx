@@ -45,6 +45,7 @@ function cockpit(cards: ReturnType<typeof card>[]) {
     widgets: { executive: cards, performance: [], funnel: [], leads: [] },
     attention_queue: [],
     recommendations: [],
+    workload: [],
     data_health: [],
     empty_state: null,
   };

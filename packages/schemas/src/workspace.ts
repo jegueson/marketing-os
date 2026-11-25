@@ -65,6 +65,29 @@ export const kpiCardSchema = z
 
 const cockpitNoteSchema = z.object({ id: z.string(), message: z.string() });
 
+/** PRD section 22 names these categories. The list is closed so a row cannot invent one. */
+export const workloadCategories = [
+  "reporting",
+  "media_optimization",
+  "seo",
+  "crm_operations",
+  "creative_production",
+  "research",
+  "tracking_qa",
+  "project_coordination",
+] as const;
+
+export type WorkloadCategory = (typeof workloadCategories)[number];
+
+export const workloadItemSchema = z
+  .object({
+    category: z.enum(workloadCategories),
+    baselineHours: z.number().int().nonnegative(),
+    hoursAbsorbed: z.number().int().nonnegative(),
+  })
+  .strict()
+  .openapi("WorkloadItem");
+
 export const cockpitViewSchema = z
   .object({
     header: z.object({
@@ -81,6 +104,7 @@ export const cockpitViewSchema = z
     }),
     attention_queue: z.array(cockpitNoteSchema),
     recommendations: z.array(cockpitNoteSchema),
+    workload: z.array(workloadItemSchema),
     data_health: z.array(dataHealthItemSchema),
     empty_state: z.object({ message: z.string() }).nullable(),
   })

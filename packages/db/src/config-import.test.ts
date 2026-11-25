@@ -35,6 +35,10 @@ const workflowSource = readFileSync(
   join(root, "customer-configs/examples/weekly-performance-review/workflow.yaml"),
   "utf8",
 );
+const policySource = readFileSync(
+  join(root, "customer-configs/examples/linear-create-issue/policy.yaml"),
+  "utf8",
+);
 
 beforeAll(async () => {
   t = await createTestDatabase();
@@ -212,5 +216,52 @@ riskClass: low
     );
     expect(preview.activeVersion).toBe(1);
     expect(preview.changes).toEqual([]);
+  });
+
+  it("publishes nothing when requireApproval is false", async () => {
+    const before = await t.pg.query<{ count: string }>(
+      "select count(*)::text as count from config_versions where resource_type = 'policy'",
+    );
+    const source = policySource.replace("requireApproval: true", "requireApproval: false");
+    await expect(
+      withContext(t.db, ctxA(), (tx) =>
+        importConfigYaml(tx, {
+          tenantId: ids.tenantA,
+          workspaceId: ids.workspaceA,
+          publishedBy: ids.userA,
+          kind: "policy",
+          source,
+        }),
+      ),
+    ).rejects.toBeInstanceOf(ValidationError);
+    const after = await t.pg.query<{ count: string }>(
+      "select count(*)::text as count from config_versions where resource_type = 'policy'",
+    );
+    expect(after.rows[0]?.count).toBe(before.rows[0]?.count);
+  });
+
+  it("publishes the example Linear policy and round-trips the export", async () => {
+    const imported = await withContext(t.db, ctxA(), (tx) =>
+      importConfigYaml(tx, {
+        tenantId: ids.tenantA,
+        workspaceId: ids.workspaceA,
+        publishedBy: ids.userA,
+        kind: "policy",
+        source: policySource,
+      }),
+    );
+    expect(imported).toMatchObject({ kind: "policy", name: "linear-create-issue", version: 1 });
+    const exported = await withContext(t.db, ctxA(), (tx) =>
+      exportActiveConfigYaml(tx, {
+        tenantId: ids.tenantA,
+        workspaceId: ids.workspaceA,
+        kind: "policy",
+        id: imported.id,
+      }),
+    );
+    expect(exported).not.toBeNull();
+    expect(parseConfigYaml("policy", exported!).document).toEqual(
+      parseConfigYaml("policy", policySource).document,
+    );
   });
 });

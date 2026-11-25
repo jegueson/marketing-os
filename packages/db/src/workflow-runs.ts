@@ -231,7 +231,7 @@ export async function startWorkflowRun(
   input: Scope & {
     workflowId: string;
     workflowVersion: number;
-    trigger: "manual";
+    trigger: "manual" | "schedule";
     createdBy: string | null;
     /** Optional fixed id so ledger usage can bind before the insert. */
     runId?: string;
@@ -280,7 +280,7 @@ export async function completeWorkflowRun(
   input: Scope & {
     runId: string;
     outcome: {
-      status: "succeeded" | "failed";
+      status: "succeeded" | "failed" | "awaiting_approval";
       errorCode: string | null;
       steps: WorkflowRunStepRow[];
       report: WorkflowRunReportRow | null;

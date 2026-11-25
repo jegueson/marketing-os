@@ -1,0 +1,20 @@
+name: linear-create-issue
+version: 1.0.0
+description: Recommend a Linear issue for the weekly review and stop for approval.
+trigger:
+  type: manual
+steps:
+  - id: spend
+    kind: read_metrics
+    metricKey: mock.spend
+    range: last_30_days
+    compareToPrevious: false
+  - id: report
+    kind: render_report
+    title: Weekly review
+    fromSteps:
+      - spend
+  - id: issue
+    kind: action
+    connector: linear
+    tool: create_issue

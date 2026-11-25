@@ -1,0 +1,10 @@
+name: spend-threshold
+version: 1.0.0
+description: Recommend a review when mock spend is over the line. No connector step.
+trigger:
+  type: manual
+steps:
+  - id: spend
+    kind: threshold
+    metricKey: mock.spend
+    above: 2000

@@ -76,6 +76,12 @@ function deps(overrides: Partial<WorkflowDeps> = {}): WorkflowDeps & { gateway: 
     vi.fn(async () => {
       throw new Error("listActions must not run in Sprint 4");
     });
+  const executeAction =
+    overrides.executeAction ??
+    vi.fn(async () => {
+      throw new Error("connector must not run");
+    });
+  const writeRecommendation = overrides.writeRecommendation ?? (async () => {});
   return {
     model: "gpt-test",
     reader: {
@@ -131,9 +137,17 @@ function deps(overrides: Partial<WorkflowDeps> = {}): WorkflowDeps & { gateway: 
       if (name === skill.name && version === skill.version) return skill;
       return null;
     },
+    async retrieveKnowledge() {
+      return { chunks: [], deniedSourceIds: [] };
+    },
+    async recordAudit() {
+      // Tests assert via overrides.
+    },
     ...overrides,
     gateway,
     listActions,
+    executeAction,
+    writeRecommendation,
   };
 }
 
@@ -169,16 +183,17 @@ describe("workflow step interpreter", () => {
     expect(run?.report?.body).toContain("2550");
   });
 
-  it("refuses a schedule trigger without calling the gateway", async () => {
+  it("starts a schedule trigger without calling a connector", async () => {
     const wired = deps();
     const outcome = await interpretWorkflow(scheduleWorkflow, {
       tenantId: tenantA,
       workspaceId: workspaceA,
       deps: wired,
     });
-    expect(outcome).toMatchObject({ status: "failed", errorCode: "trigger_not_active", report: null });
-    expect(wired.gateway.calls.complete).toHaveLength(0);
+    expect(outcome.status).toBe("succeeded");
+    expect(wired.gateway.calls.complete).toHaveLength(1);
     expect(wired.listActions).not.toHaveBeenCalled();
+    expect(wired.executeAction).not.toHaveBeenCalled();
   });
 
   it("does not load another tenant's business profile into a skill", async () => {
@@ -258,6 +273,46 @@ describe("workflow step interpreter", () => {
       deps: wired,
     });
     expect(outcome).toMatchObject({ status: "failed", errorCode: "skill_output_invalid", report: null });
+  });
+
+  it("foreign source id returns empty chunks and an audit event; report never has the other tenant sentence", async () => {
+    const foreignSourceId = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
+    const foreignSentence = "TENANT-B-ONLY-SENTENCE-ABOUT-SPEND";
+    const audits: Array<{ eventType: string; resourceId?: string }> = [];
+    const knowledgeWorkflow: WorkflowDefinition = {
+      ...manualWorkflow,
+      steps: [
+        {
+          id: "knowledge",
+          kind: "retrieve_knowledge",
+          sourceIds: [foreignSourceId],
+          query: "brand notes",
+        },
+        { id: "report", kind: "render_report", title: "Knowledge check", fromSteps: ["knowledge"] },
+      ],
+    };
+    const wired = deps({
+      async retrieveKnowledge() {
+        return { chunks: [], deniedSourceIds: [foreignSourceId] };
+      },
+      async recordAudit(event) {
+        audits.push({
+          eventType: event.eventType,
+          ...(event.resourceId !== undefined ? { resourceId: event.resourceId } : {}),
+        });
+      },
+    });
+    const outcome = await interpretWorkflow(knowledgeWorkflow, {
+      tenantId: tenantA,
+      workspaceId: workspaceA,
+      deps: wired,
+    });
+    expect(outcome.status).toBe("succeeded");
+    expect(outcome.steps.find((step) => step.stepId === "knowledge")?.output).toEqual({ chunks: [] });
+    expect(audits).toEqual([
+      { eventType: "knowledge.foreign_source_denied", resourceId: foreignSourceId },
+    ]);
+    expect(outcome.report?.body ?? "").not.toContain(foreignSentence);
   });
 });
 

@@ -3,7 +3,7 @@ import { check, index, integer, jsonb, pgTable, text, timestamp, uuid } from "dr
 import { profiles, tenants, workspaces } from "./tenancy";
 import { workflows } from "./config";
 
-export type WorkflowRunStatus = "queued" | "running" | "succeeded" | "failed" | "cancelled";
+export type WorkflowRunStatus = "queued" | "running" | "succeeded" | "failed" | "cancelled" | "awaiting_approval";
 export type WorkflowRunTrigger = "manual" | "schedule";
 
 export type WorkflowRunStepRow = {
@@ -52,7 +52,7 @@ export const workflowRuns = pgTable(
     check("workflow_runs_trigger_check", sql`${table.trigger} in ('manual', 'schedule')`),
     check(
       "workflow_runs_status_check",
-      sql`${table.status} in ('queued', 'running', 'succeeded', 'failed', 'cancelled')`,
+      sql`${table.status} in ('queued', 'running', 'succeeded', 'failed', 'cancelled', 'awaiting_approval')`,
     ),
     check("workflow_runs_version_positive_check", sql`${table.workflowVersion} > 0`),
     check("workflow_runs_steps_array_check", sql`jsonb_typeof(${table.steps}) = 'array'`),

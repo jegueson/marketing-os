@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@marketing-os/core": "workspace:*",
+    "@marketing-os/policy": "workspace:*",
     "@marketing-os/schemas": "workspace:*",
     "yaml": "^2.9.1"
   },

@@ -4,7 +4,8 @@ import { NotFoundError, assessDataHealth, ok } from "@marketing-os/core";
 import { buildKpiCards } from "@marketing-os/metrics/kpi";
 import type { MetricDefinition } from "@marketing-os/metrics";
 import { cockpitViewSchema, type CockpitView, type DataHealthItem } from "@marketing-os/schemas";
-import { connections, connectors, dataHealth, metricDefinitions, metricValues, workspaces } from "@marketing-os/db";
+import { connections, connectors, dataHealth, listRecommendations, listWorkload, metricDefinitions, metricValues, workspaces } from "@marketing-os/db";
+import { managedWorkEnabled } from "../auth/managed-flag";
 import { requirePrincipal } from "../auth/principal";
 import { requireWorkspace } from "../auth/access";
 import { run, tenantContext } from "../context";
@@ -144,6 +145,11 @@ cockpitRoutes.openapi(cockpitRoute, async (c) => {
     const freshness: CockpitView["header"]["freshness"] =
       active.length === 0 ? "empty" : active.some((h) => h.health === "healthy") ? "live" : "stale";
 
+    const recommendationRows = (await managedWorkEnabled(c))
+      ? await run(c, tenantContext(c), (tx) => listRecommendations(tx, workspaceId))
+      : [];
+    const workload = await run(c, tenantContext(c), (tx) => listWorkload(tx, workspaceId));
+
     const cards = buildKpiCards({
       definitions,
       current,
@@ -171,7 +177,8 @@ cockpitRoutes.openapi(cockpitRoute, async (c) => {
       },
       widgets,
       attention_queue: [],
-      recommendations: [],
+      recommendations: recommendationRows.map((row) => ({ id: row.id, message: row.problem })),
+      workload,
       data_health: health,
       empty_state:
         freshness === "empty" && cards.length === 0

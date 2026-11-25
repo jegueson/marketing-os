@@ -11,6 +11,7 @@ import { googleAdsConnector } from "@marketing-os/connector-google-ads";
 import { hubspotConnector } from "@marketing-os/connector-hubspot";
 import { metaConnector } from "@marketing-os/connector-meta";
 import { mockConnector } from "@marketing-os/connector-mock";
+import { restConnector } from "@marketing-os/connector-rest";
 import type { AppEnv } from "./env";
 import type { OAuthProvider } from "./lib/mock-oauth";
 import { createMockOAuthProvider } from "./lib/mock-oauth";
@@ -74,6 +75,7 @@ export const defaultDeps: AppDeps = {
     ["google-ads", googleAdsConnector],
     ["hubspot", hubspotConnector],
     ["meta", metaConnector],
+    ["rest", restConnector],
   ]),
   oauthProviders: new Map<string, OAuthProvider>([["mock", createMockOAuthProvider()]]),
   provisioningHooks: noopProvisioningHooks,

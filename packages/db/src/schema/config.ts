@@ -13,9 +13,9 @@ import {
 } from "drizzle-orm/pg-core";
 import { profiles, tenants, workspaces } from "./tenancy";
 
-type ConfigDocumentTable = "business_profiles" | "brand_profiles" | "skills" | "agents" | "workflows";
+type ConfigDocumentTable = "business_profiles" | "brand_profiles" | "skills" | "agents" | "workflows" | "policies";
 
-export type ConfigResourceType = "business_profile" | "brand_profile" | "skill" | "agent" | "workflow";
+export type ConfigResourceType = "business_profile" | "brand_profile" | "skill" | "agent" | "workflow" | "policy";
 
 /**
  * Draft plus an active version pointer. Profiles are one row per workspace.
@@ -62,6 +62,7 @@ export const brandProfiles = configDocumentTable("brand_profiles", true);
 export const skills = configDocumentTable("skills", false);
 export const agents = configDocumentTable("agents", false);
 export const workflows = configDocumentTable("workflows", false);
+export const policies = configDocumentTable("policies", false);
 
 /**
  * Append-only published documents. `resource_type` names the row that owns the
@@ -94,7 +95,7 @@ export const configVersions = pgTable(
     index("idx_config_versions_tenant_created").on(table.tenantId, table.createdAt),
     check(
       "config_versions_resource_type_check",
-      sql`${table.resourceType} in ('business_profile', 'brand_profile', 'skill', 'agent', 'workflow')`,
+      sql`${table.resourceType} in ('business_profile', 'brand_profile', 'skill', 'agent', 'workflow', 'policy')`,
     ),
     check("config_versions_version_positive_check", sql`${table.version} > 0`),
     check("config_versions_document_object_check", sql`jsonb_typeof(${table.document}) = 'object'`),

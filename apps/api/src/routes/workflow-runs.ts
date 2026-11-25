@@ -2,11 +2,13 @@ import { z } from "@hono/zod-openapi";
 import { AppError, NotFoundError, ok, ValidationError } from "@marketing-os/core";
 import {
   completeWorkflowRun,
+  createKnowledgeRetrieveStore,
   getWorkflowRun,
   loadBudgetSnapshot,
   loadPublishedBrandProfile,
   loadPublishedBusinessProfile,
   loadPublishedSkill,
+  insertRecommendation,
   loadPublishedWorkflow,
   recordUsage,
   resolveModelCredential,
@@ -15,6 +17,7 @@ import {
   type Database,
   type StoredWorkflowRun,
 } from "@marketing-os/db";
+import { retrieveKnowledge } from "@marketing-os/knowledge";
 import { withLedger, type UsageLedgerEntry, type UsageSink } from "@marketing-os/model-gateway";
 import { interpretWorkflow, type WorkflowDeps, type WorkflowMetricReader } from "@marketing-os/workflow";
 import type { MetricReader } from "@marketing-os/ask";
@@ -23,7 +26,7 @@ import { requireWorkspace } from "../auth/access";
 import { requireConfigEnabled } from "../auth/config-flag";
 import { run, tenantContext, type AppContext } from "../context";
 import { keyRingFromConfig } from "../lib/credentials";
-import { recordAudit } from "../lib/events";
+import { recordAudit as writeAuditEvent } from "../lib/events";
 import { createDrizzleMetricReader } from "../ask/drizzle-metric-reader";
 import {
   apiSuccessSchema,
@@ -69,7 +72,7 @@ const runViewSchema = z
     workflowId: z.string().uuid(),
     workflowVersion: z.number().int(),
     trigger: z.literal("manual"),
-    status: z.enum(["queued", "running", "succeeded", "failed", "cancelled"]),
+    status: z.enum(["queued", "running", "succeeded", "failed", "cancelled", "awaiting_approval"]),
     errorCode: z.string().nullable(),
     steps: z.array(stepSchema),
     report: reportSchema.nullable(),
@@ -219,6 +222,23 @@ async function buildDeps(
     async listActions() {
       throw new AppError("forbidden", "Connector actions are disabled for Sprint 4 workflows", 403);
     },
+    async executeAction() {
+      throw new AppError("forbidden", "Connector actions are disabled for Sprint 4 workflows", 403);
+    },
+    async writeRecommendation(draft) {
+      await withContext(db, { tenantId: draft.tenantId, userId: null, staff: false }, (tx: Database) =>
+        insertRecommendation(tx, {
+          tenantId: draft.tenantId,
+          workspaceId: draft.workspaceId,
+          problem: draft.problem,
+          evidence: draft.evidence,
+          proposedAction: draft.proposedAction,
+          expectedImpact: draft.expectedImpact,
+          confidence: draft.confidence,
+          effort: draft.effort,
+        }),
+      );
+    },
     async loadBusinessProfile(tenantId, wsId) {
       return withContext(db, { tenantId, userId: null, staff: false }, (tx: Database) =>
         loadPublishedBusinessProfile(tx, { tenantId, workspaceId: wsId }),
@@ -232,6 +252,44 @@ async function buildDeps(
     async loadPublishedSkill(tenantId, wsId, name, version) {
       return withContext(db, { tenantId, userId: null, staff: false }, (tx: Database) =>
         loadPublishedSkill(tx, { tenantId, workspaceId: wsId, name, version }),
+      );
+    },
+    async retrieveKnowledge(knowledge) {
+      return withContext(db, { tenantId: knowledge.tenantId, userId: null, staff: false }, async (tx) =>
+        retrieveKnowledge(
+          {
+            tenantId: knowledge.tenantId,
+            workspaceId: knowledge.workspaceId,
+            sourceIds: knowledge.sourceIds,
+            query: knowledge.query,
+            model: credential.defaultModel ?? "text-embedding-3-small",
+          },
+          {
+            gateway: withLedger(appDeps.createModelGateway(credential, config, c.env), sink, {
+              tenantId: knowledge.tenantId,
+              workspaceId: knowledge.workspaceId,
+              userId: c.get("principal").userId,
+              runId: input.runId,
+              purpose: "knowledge",
+              promptName: null,
+              promptVersion: null,
+            }),
+            store: createKnowledgeRetrieveStore(tx),
+          },
+        ),
+      );
+    },
+    async recordAudit(event) {
+      await withContext(db, { tenantId: event.tenantId, userId: null, staff: false }, (tx) =>
+        writeAuditEvent(tx, {
+          eventType: event.eventType,
+          tenantId: event.tenantId,
+          workspaceId: event.workspaceId,
+          ...(event.resourceType !== undefined ? { resourceType: event.resourceType } : {}),
+          ...(event.resourceId !== undefined ? { resourceId: event.resourceId } : {}),
+          payload: event.payload ?? {},
+          actorId: c.get("principal").userId,
+        }),
       );
     },
   };
@@ -321,7 +379,7 @@ workflowRunRoutes.openapi(createRoute, async (c) => {
       },
     });
     if (!updated) throw new NotFoundError("Workflow run not found");
-    await recordAudit(tx, {
+    await writeAuditEvent(tx, {
       eventType: "config.workflow_test_run",
       tenantId: access.tenantId,
       workspaceId: workspace,

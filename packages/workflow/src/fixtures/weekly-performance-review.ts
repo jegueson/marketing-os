@@ -104,6 +104,12 @@ export function buildWeeklyReviewDeps(
     listActions: async () => {
       throw new Error("listActions must not run in Sprint 4");
     },
+    executeAction: async () => {
+      throw new Error("connector must not run");
+    },
+    async writeRecommendation() {
+      // The weekly review fixture has no threshold step.
+    },
     reader: {
       async metricValue(query) {
         if (query.metricKey !== "mock.spend") {
@@ -146,6 +152,12 @@ export function buildWeeklyReviewDeps(
     async loadPublishedSkill(_tenantId, _workspaceId, name, version) {
       if (name === skill.name && version === skill.version) return skill;
       return null;
+    },
+    async retrieveKnowledge() {
+      return { chunks: [], deniedSourceIds: [] };
+    },
+    async recordAudit() {
+      // Fixture runs do not persist audit rows.
     },
   };
 }

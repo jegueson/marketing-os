@@ -5,8 +5,10 @@ export type {
   WorkflowDeps,
   WorkflowMetricRange,
   WorkflowMetricReader,
+  WorkflowRecommendation,
   WorkflowStepDo,
 } from "./interpreter";
+export { scheduleIsDue, tickSchedule } from "./triggers";
 export { createInMemoryWorkflowPort } from "./memory";
 export type {
   CompleteWorkflowInput,

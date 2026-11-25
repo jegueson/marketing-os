@@ -1,5 +1,6 @@
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 import { ValidationError } from "@marketing-os/core";
+import { policyDefinitionSchema, type PolicyDefinition } from "@marketing-os/policy";
 import {
   brandProfileSchema,
   businessProfileSchema,
@@ -11,13 +12,14 @@ import {
   type WorkflowDefinition,
 } from "@marketing-os/schemas";
 
-export type ConfigKind = "skill" | "workflow" | "business_profile" | "brand_profile";
+export type ConfigKind = "skill" | "workflow" | "business_profile" | "brand_profile" | "policy";
 
 export type ParsedConfigDocument =
   | { kind: "skill"; document: SkillDefinition }
   | { kind: "workflow"; document: WorkflowDefinition }
   | { kind: "business_profile"; document: BusinessProfile }
-  | { kind: "brand_profile"; document: BrandProfile };
+  | { kind: "brand_profile"; document: BrandProfile }
+  | { kind: "policy"; document: PolicyDefinition };
 
 function validationIssues(error: { issues: { path: PropertyKey[]; code: string; message: string }[] }) {
   return error.issues.map((issue) => ({
@@ -74,6 +76,13 @@ export function parseConfigYaml(kind: ConfigKind, source: string): ParsedConfigD
         throw new ValidationError("Brand profile YAML is invalid", {
           issues: validationIssues(parsed.error),
         });
+      }
+      return { kind, document: parsed.data };
+    }
+    case "policy": {
+      const parsed = policyDefinitionSchema.safeParse(raw);
+      if (!parsed.success) {
+        throw new ValidationError("Policy YAML is invalid", { issues: validationIssues(parsed.error) });
       }
       return { kind, document: parsed.data };
     }

@@ -26,6 +26,7 @@ type RunMeta = {
   workspaceId: string;
   workflowId: string;
   workflowVersion: number;
+  trigger: "manual" | "schedule";
   createdAt: string;
 };
 
@@ -54,7 +55,7 @@ function mapInstanceStatus(status: InstanceStatus["status"]): WorkflowRunStatus 
 function isOutcome(value: unknown): value is WorkflowOutcome {
   if (!value || typeof value !== "object") return false;
   const record = value as Record<string, unknown>;
-  if (record.status !== "succeeded" && record.status !== "failed") return false;
+  if (record.status !== "succeeded" && record.status !== "failed" && record.status !== "awaiting_approval") return false;
   return Array.isArray(record.steps);
 }
 
@@ -81,6 +82,7 @@ export function createCloudflareWorkflowPort(
         workspaceId: input.workspaceId,
         workflowId: input.workflowId,
         workflowVersion: input.workflowVersion,
+        trigger: input.trigger,
         createdAt,
       });
       await binding.create({ id: runId, params });
@@ -116,7 +118,7 @@ export function createCloudflareWorkflowPort(
           workspaceId: meta.workspaceId,
           workflowId: meta.workflowId,
           workflowVersion: meta.workflowVersion,
-          trigger: "manual",
+          trigger: meta.trigger,
           status: finishedStatus,
           createdAt: meta.createdAt,
           updatedAt: new Date().toISOString(),

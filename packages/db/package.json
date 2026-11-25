@@ -17,7 +17,9 @@
   "dependencies": {
     "@marketing-os/config": "workspace:*",
     "@marketing-os/core": "workspace:*",
+    "@marketing-os/knowledge": "workspace:*",
     "@marketing-os/metrics": "workspace:*",
+    "@marketing-os/policy": "workspace:*",
     "@marketing-os/prompts": "workspace:*",
     "@marketing-os/schemas": "workspace:*",
     "drizzle-orm": "^0.44.5",
@@ -26,6 +28,7 @@
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.16",
     "@electric-sql/pglite-pgvector": "^0.0.17",
+    "@marketing-os/model-gateway": "workspace:*",
     "@types/node": "^26.6.6",
     "drizzle-kit": "^0.31.4",
     "typescript": "^5.9.2",

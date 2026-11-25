@@ -54,6 +54,7 @@ describe("cockpitViewSchema", () => {
       widgets: { executive: [], performance: [], funnel: [], leads: [] },
       attention_queue: [],
       recommendations: [],
+      workload: [],
       data_health: [],
       empty_state: { message: "Connect a data source" },
     };

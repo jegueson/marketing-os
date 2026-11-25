@@ -96,6 +96,9 @@ describe("workspace helpers", () => {
     expect(portalLinks("w1", "customer_admin", { ask_marketing: true }).map((link) => link.label)).toContain("Ask");
     expect(portalLinks("w1", "customer_user", { ask_marketing: true }).map((link) => link.label)).toContain("Ask");
     expect(portalLinks("w1", "success_manager", { ask_marketing: true }).map((link) => link.label)).not.toContain("Ask");
+    expect(portalLinks("w1", "customer_admin", { managed_work: false }).map((link) => link.label)).not.toContain("Approvals");
+    expect(portalLinks("w1", "customer_admin", { managed_work: true }).map((link) => link.label)).toContain("Approvals");
+    expect(portalLinks("w1", "ai_specialist", { managed_work: true }).map((link) => link.label)).not.toContain("Approvals");
     expect(canUseAsk("customer_user")).toBe(true);
     expect(canUseAsk("success_manager")).toBe(false);
   });
