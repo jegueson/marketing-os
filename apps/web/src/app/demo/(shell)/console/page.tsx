@@ -78,7 +78,7 @@ function AgentsTab() {
       {AGENTS.map((a) => (
         <li key={a.id} className="glass rounded-2xl p-5">
           <div className="flex items-start gap-3">
-            <span className="grid size-10 place-items-center rounded-xl bg-gradient-to-br from-primary to-slate-600 text-white"><Bot aria-hidden="true" className="size-5" /></span>
+            <span className="grid size-10 place-items-center rounded-xl bg-gradient-to-br from-primary to-slate-600 text-on-primary"><Bot aria-hidden="true" className="size-5" /></span>
             <span className="min-w-0 flex-1">
               <span className="block text-sm font-semibold">{a.name}</span>
               <span className="block text-xs text-muted">{a.purpose}</span>

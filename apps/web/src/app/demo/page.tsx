@@ -81,7 +81,7 @@ export default function LandingPage() {
             Connect the stack you already use. See it in one cockpit. Ask questions about your own data. Automate the recurring work, with a human approval when the action is risky.
           </motion.p>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.24 }} className="mt-8 flex flex-wrap gap-3">
-            <button type="button" onClick={tour.start} className="focus-ring inline-flex cursor-pointer items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-white shadow-[0_10px_30px_-10px_rgb(37_99_235/0.9)] transition hover:bg-primary-strong">
+            <button type="button" onClick={tour.start} className="focus-ring inline-flex cursor-pointer items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-on-primary shadow-[0_10px_30px_-10px_rgb(37_99_235/0.9)] transition hover:bg-primary-strong">
               <Presentation aria-hidden="true" className="size-4" /> Start the investor tour
             </button>
             <Link href="/demo/today" className="focus-ring glass inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition hover:border-accent/50">

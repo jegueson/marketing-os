@@ -18,7 +18,7 @@ export function Funnel({ stages }: { stages: readonly { stage: string; value: nu
             <span className="text-muted">{s.stage}</span>
             <span className="relative h-7 overflow-hidden rounded-md bg-muted/10">
               <motion.span
-                className="absolute inset-y-0 left-0 flex items-center rounded-md bg-gradient-to-r from-primary to-accent px-2 font-semibold text-white tabular"
+                className="absolute inset-y-0 left-0 flex items-center rounded-md bg-gradient-to-r from-primary to-accent px-2 font-semibold text-on-primary tabular"
                 initial={{ width: 0 }}
                 animate={{ width: `${width}%` }}
                 transition={{ duration: 0.9, delay: 0.1 + i * 0.09, ease: [0.16, 1, 0.3, 1] }}

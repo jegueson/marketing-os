@@ -6,15 +6,17 @@ import { PortalFrame } from "@/components/workspace";
 
 export default function ModelSettingsPage() {
   return (
-    <main>
-      <h1>Model settings</h1>
-      <RequireAuth>
-        {(auth) => (
-          <PortalFrame me={auth.me} api={auth.api}>
-            {(ws) => <ModelSettings api={auth.api} workspaceId={ws.workspaceId} role={ws.role} />}
-          </PortalFrame>
-        )}
-      </RequireAuth>
-    </main>
+    <RequireAuth>
+      {(auth) => (
+        <PortalFrame
+          me={auth.me}
+          api={auth.api}
+          title="Model settings"
+          onSignOut={() => void auth.signOut()}
+        >
+          {(ws) => <ModelSettings api={auth.api} workspaceId={ws.workspaceId} role={ws.role} />}
+        </PortalFrame>
+      )}
+    </RequireAuth>
   );
 }

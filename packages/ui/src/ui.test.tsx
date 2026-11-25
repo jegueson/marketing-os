@@ -10,8 +10,9 @@ describe("ui primitives", () => {
   });
 
   it("renders an input label", () => {
-    render(<Input label="Email" name="email" />);
+    render(<Input label="Email" name="email" required />);
     expect(screen.getByText("Email")).toBeTruthy();
+    expect(screen.getByTitle("required")).toBeTruthy();
   });
 
   it("renders empty and error states", () => {

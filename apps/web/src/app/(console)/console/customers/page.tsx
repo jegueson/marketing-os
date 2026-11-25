@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { EmptyState, Table } from "@marketing-os/ui";
 import { RequireAuth, type ReadyAuth } from "@/components/auth";
+import { ConsoleFrame } from "@/components/console-frame";
 import { useApi, View } from "@/components/api-view";
 
 type Customer = { id: string; name: string; status: string; plan: string; createdAt: string };
@@ -18,17 +19,19 @@ function Customers({ auth }: { auth: ReadyAuth }) {
             body="Convert a qualified lead to create one."
           />
         ) : (
-          <Table
-            headers={["Customer", "Status", "Plan", "Created"]}
-            rows={rows.map((t) => [
-              <Link key="n" href={`/console/customers/${t.id}`}>
-                {t.name}
-              </Link>,
-              t.status,
-              t.plan,
-              new Date(t.createdAt).toLocaleDateString(),
-            ])}
-          />
+          <div className="app-panel">
+            <Table
+              headers={["Customer", "Status", "Plan", "Created"]}
+              rows={rows.map((t) => [
+                <Link key="n" href={`/console/customers/${t.id}`}>
+                  {t.name}
+                </Link>,
+                t.status,
+                t.plan,
+                new Date(t.createdAt).toLocaleDateString(),
+              ])}
+            />
+          </div>
         )
       }
     </View>
@@ -37,10 +40,12 @@ function Customers({ auth }: { auth: ReadyAuth }) {
 
 export default function CustomersPage() {
   return (
-    <main>
-      <h1>Customers</h1>
-      <Link href="/console">Console</Link>
-      <RequireAuth staff>{(auth) => <Customers auth={auth} />}</RequireAuth>
-    </main>
+    <RequireAuth staff>
+      {(auth) => (
+        <ConsoleFrame auth={auth} title="Customers">
+          <Customers auth={auth} />
+        </ConsoleFrame>
+      )}
+    </RequireAuth>
   );
 }

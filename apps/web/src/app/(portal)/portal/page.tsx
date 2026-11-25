@@ -1,28 +1,32 @@
 "use client";
 
-import { Button } from "@marketing-os/ui";
 import { RequireAuth } from "@/components/auth";
 import { PortalFrame } from "@/components/workspace";
 
 export default function PortalHomePage() {
   return (
-    <main>
-      <h1>Customer portal</h1>
-      <RequireAuth>
-        {(auth) => (
-          <>
-            <p>Signed in as {auth.me.email}</p>
-            <PortalFrame me={auth.me} api={auth.api}>
-              {(ws) => (
-                <p>
-                  {ws.tenantName} · {ws.workspaceName} · your role: {ws.role}
-                </p>
-              )}
-            </PortalFrame>
-            <Button onClick={() => void auth.signOut()}>Sign out</Button>
-          </>
-        )}
-      </RequireAuth>
-    </main>
+    <RequireAuth>
+      {(auth) => (
+        <PortalFrame
+          me={auth.me}
+          api={auth.api}
+          title="Customer portal"
+          onSignOut={() => void auth.signOut()}
+        >
+          {(ws) => (
+            <section className="app-panel">
+              <h2>Welcome</h2>
+              <p className="app-lede">
+                {ws.tenantName} · {ws.workspaceName} · your role: {ws.role}
+              </p>
+              <p className="app-lede">
+                Use the sidebar to finish onboarding, connect sources, open the cockpit, or ask
+                Marketing.
+              </p>
+            </section>
+          )}
+        </PortalFrame>
+      )}
+    </RequireAuth>
   );
 }

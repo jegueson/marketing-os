@@ -14,49 +14,61 @@
   --color-primary: var(--mos-primary);
   --color-primary-strong: var(--mos-primary-strong);
   --color-accent: var(--mos-accent);
+  --color-on-accent: var(--mos-on-primary, #07090e);
+  --color-on-primary: var(--mos-on-primary, #07090e);
   --color-success: var(--mos-success);
   --color-warning: var(--mos-warning);
   --color-danger: var(--mos-danger);
   --color-violet: var(--mos-violet);
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-plus-jakarta), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-jetbrains), ui-monospace, monospace;
 }
 
+/* Light: sage field with carbon type; yuzu remains the 10% signal. */
 .mos {
-  --mos-bg: #f4f7fb;
-  --mos-surface: rgb(255 255 255 / 0.82);
-  --mos-surface-2: #eef2f7;
-  --mos-border: rgb(15 23 42 / 0.09);
-  --mos-fg: #0f172a;
-  --mos-muted: #475569;
-  --mos-primary: #2563eb;
-  --mos-primary-strong: #1d4ed8;
-  --mos-accent: #3b82f6;
-  --mos-success: #047857;
-  --mos-warning: #b45309;
-  --mos-danger: #dc2626;
-  --mos-violet: #6d28d9;
-  --mos-glow: rgb(37 99 235 / 0.14);
-  --mos-grid: rgb(15 23 42 / 0.045);
+  --mos-carbon: #1b2130;
+  --mos-sage: #b8c7c0;
+  --mos-yuzu: #e8ff2a;
+  --mos-bg: #e7eee9;
+  --mos-surface: rgb(255 255 255 / 0.78);
+  --mos-surface-2: #d5e0da;
+  --mos-border: rgb(27 33 48 / 0.12);
+  --mos-fg: #1b2130;
+  --mos-muted: #4a5853;
+  --mos-primary: #1b2130;
+  --mos-primary-strong: #0f131c;
+  --mos-accent: #c6d60a;
+  --mos-ink: #07090e;
+  --mos-on-primary: #f2f6f4;
+  --mos-success: #0f766e;
+  --mos-warning: #a16207;
+  --mos-danger: #b91c1c;
+  --mos-violet: #3f6f62;
+  --mos-glow: rgb(232 255 42 / 0.22);
+  --mos-grid: rgb(27 33 48 / 0.05);
   color-scheme: light;
 }
 
+/* Dark (default product): Carbon 60% / Sage 30% / Yuzu 10%. */
 .mos.dark {
-  --mos-bg: #070b16;
-  --mos-surface: rgb(17 25 43 / 0.66);
-  --mos-surface-2: #172036;
-  --mos-border: rgb(148 163 184 / 0.13);
-  --mos-fg: #e8eef7;
-  --mos-muted: #94a3b8;
-  --mos-primary: #3b82f6;
-  --mos-primary-strong: #2563eb;
-  --mos-accent: #60a5fa;
-  --mos-success: #34d399;
-  --mos-warning: #fbbf24;
-  --mos-danger: #f87171;
-  --mos-violet: #a78bfa;
-  --mos-glow: rgb(59 130 246 / 0.22);
-  --mos-grid: rgb(148 163 184 / 0.05);
+  --mos-bg: #1b2130;
+  --mos-surface: rgb(184 199 192 / 0.1);
+  --mos-surface-2: rgb(184 199 192 / 0.16);
+  --mos-border: rgb(184 199 192 / 0.28);
+  --mos-fg: #f2f6f4;
+  --mos-muted: #c5d4cd;
+  --mos-ink: #07090e;
+  --mos-primary: #e8ff2a;
+  --mos-primary-strong: #d4eb18;
+  --mos-accent: #e8ff2a;
+  --mos-on-primary: #07090e;
+  --mos-on-accent: #07090e;
+  --mos-success: #7dcfb6;
+  --mos-warning: #e6c35c;
+  --mos-danger: #f07178;
+  --mos-violet: #9bb8ad;
+  --mos-glow: rgb(232 255 42 / 0.16);
+  --mos-grid: rgb(184 199 192 / 0.06);
   color-scheme: dark;
 }
 
@@ -78,7 +90,7 @@
 
   .glow-ring {
     box-shadow:
-      0 0 0 1px rgb(59 130 246 / 0.35),
+      0 0 0 1px rgb(232 255 42 / 0.35),
       0 8px 32px -8px var(--mos-glow);
   }
 

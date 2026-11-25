@@ -62,13 +62,17 @@ function Checklist({ auth, ws }: { auth: ReadyAuth; ws: Membership }) {
 
 export default function OnboardingPage() {
   return (
-    <main>
-      <h1>Onboarding</h1>
-      <RequireAuth>
-        {(auth) => (
-          <PortalFrame me={auth.me} api={auth.api}>{(ws) => <Checklist auth={auth} ws={ws} />}</PortalFrame>
-        )}
-      </RequireAuth>
-    </main>
+    <RequireAuth>
+      {(auth) => (
+        <PortalFrame
+          me={auth.me}
+          api={auth.api}
+          title="Onboarding"
+          onSignOut={() => void auth.signOut()}
+        >
+          {(ws) => <Checklist auth={auth} ws={ws} />}
+        </PortalFrame>
+      )}
+    </RequireAuth>
   );
 }

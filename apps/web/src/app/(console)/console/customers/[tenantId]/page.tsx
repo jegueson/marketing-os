@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useState } from "react";
 import { Button, ErrorState, Table } from "@marketing-os/ui";
 import { RequireAuth, type ReadyAuth } from "@/components/auth";
+import { ConsoleFrame } from "@/components/console-frame";
 import { useApi, View } from "@/components/api-view";
 import { CustomerConfig } from "@/components/customer-config";
 import { CustomerProfiles } from "@/components/customer-profiles";
@@ -145,9 +146,15 @@ function Customer({ auth, tenantId }: { auth: ReadyAuth; tenantId: string }) {
 export default function CustomerPage() {
   const { tenantId } = useParams<{ tenantId: string }>();
   return (
-    <main>
-      <Link href="/console/customers">All customers</Link>
-      <RequireAuth staff>{(auth) => <Customer auth={auth} tenantId={tenantId} />}</RequireAuth>
-    </main>
+    <RequireAuth staff>
+      {(auth) => (
+        <ConsoleFrame auth={auth} title="Customer">
+          <p className="app-lede">
+            <Link href="/console/customers">All customers</Link>
+          </p>
+          <Customer auth={auth} tenantId={tenantId} />
+        </ConsoleFrame>
+      )}
+    </RequireAuth>
   );
 }

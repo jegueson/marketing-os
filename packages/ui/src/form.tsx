@@ -4,6 +4,10 @@ export type FormProps = FormHTMLAttributes<HTMLFormElement> & {
   children: ReactNode;
 };
 
-export function Form({ children, ...props }: FormProps) {
-  return <form {...props}>{children}</form>;
+export function Form({ children, className, ...props }: FormProps) {
+  return (
+    <form className={["mos-form", className].filter(Boolean).join(" ")} {...props}>
+      {children}
+    </form>
+  );
 }

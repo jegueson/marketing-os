@@ -5,6 +5,7 @@ import { useState } from "react";
 import { leadStatuses } from "@marketing-os/core";
 import { Button, EmptyState, Table } from "@marketing-os/ui";
 import { RequireAuth, type ReadyAuth } from "@/components/auth";
+import { ConsoleFrame } from "@/components/console-frame";
 import { useApi, View } from "@/components/api-view";
 
 type LeadRow = {
@@ -98,10 +99,12 @@ function Leads({ auth }: { auth: ReadyAuth }) {
 
 export default function LeadsPage() {
   return (
-    <main>
-      <h1>Leads</h1>
-      <Link href="/console">Console</Link>
-      <RequireAuth staff>{(auth) => <Leads auth={auth} />}</RequireAuth>
-    </main>
+    <RequireAuth staff>
+      {(auth) => (
+        <ConsoleFrame auth={auth} title="Leads">
+          <Leads auth={auth} />
+        </ConsoleFrame>
+      )}
+    </RequireAuth>
   );
 }
