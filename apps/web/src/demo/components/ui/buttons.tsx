@@ -3,7 +3,8 @@ import type { ButtonHTMLAttributes, ReactNode } from "react";
 type Variant = "primary" | "secondary" | "ghost" | "danger";
 
 const VARIANTS: Record<Variant, string> = {
-  primary: "bg-primary text-white shadow-[0_6px_20px_-6px_rgb(37_99_235/0.7)] hover:bg-primary-strong",
+  primary:
+    "bg-primary text-on-primary shadow-[0_6px_20px_-6px_rgb(232_255_42/0.35)] hover:bg-primary-strong",
   secondary: "border border-border bg-surface-2/60 text-fg hover:border-accent/50",
   ghost: "text-muted hover:bg-muted/10 hover:text-fg",
   danger: "border border-danger/40 text-danger hover:bg-danger/10",
@@ -47,7 +48,7 @@ export function Segmented<T extends string>({
             role="tab"
             aria-selected={active}
             onClick={() => onChange(option.id)}
-            className={`focus-ring relative cursor-pointer rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${active ? "bg-primary text-white shadow" : "text-muted hover:text-fg"}`}
+            className={`focus-ring relative cursor-pointer rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${active ? "bg-primary text-on-primary shadow" : "text-muted hover:text-fg"}`}
           >
             {option.label}
           </button>

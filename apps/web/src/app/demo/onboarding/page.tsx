@@ -105,7 +105,7 @@ export default function OnboardingPage() {
                           <span className="text-xs font-medium">{c.name}</span>
                           <AnimatePresence>
                             {on ? (
-                              <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} className="absolute top-2 right-2 grid size-5 place-items-center rounded-full bg-primary text-white">
+                              <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} className="absolute top-2 right-2 grid size-5 place-items-center rounded-full bg-primary text-on-primary">
                                 <Check aria-hidden="true" className="size-3" />
                               </motion.span>
                             ) : null}
@@ -175,7 +175,7 @@ export default function OnboardingPage() {
                     const active = i === built;
                     return (
                       <motion.li key={task} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }} className="flex items-center gap-3 text-sm">
-                        <span className={`grid size-7 place-items-center rounded-full border transition-colors ${done ? "border-primary bg-primary text-white" : active ? "border-accent text-accent" : "border-border text-muted"}`}>
+                        <span className={`grid size-7 place-items-center rounded-full border transition-colors ${done ? "border-primary bg-primary text-on-primary" : active ? "border-accent text-accent" : "border-border text-muted"}`}>
                           {done ? <Check aria-hidden="true" className="size-3.5" /> : active ? <Loader2 aria-hidden="true" className="size-3.5 animate-spin motion-reduce:animate-none" /> : <span className="text-[10px]">{i + 1}</span>}
                         </span>
                         <span className={done ? "" : "text-muted"}>{task}</span>
@@ -188,7 +188,7 @@ export default function OnboardingPage() {
                     <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="mt-8 rounded-2xl border border-success/30 bg-success/10 p-5">
                       <p className="font-semibold text-success">Cockpit ready in 3 minutes 12 seconds</p>
                       <p className="mt-1 text-sm text-muted">First insight found: Meta retargeting CPA is 92% above brand search.</p>
-                      <Link href="/demo/today" className="focus-ring mt-4 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-strong">
+                      <Link href="/demo/today" className="focus-ring mt-4 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary hover:bg-primary-strong">
                         Open Today <ArrowRight aria-hidden="true" className="size-4" />
                       </Link>
                     </motion.div>

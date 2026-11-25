@@ -1,0 +1,598 @@
+/**
+ * Marketing OS brand tokens and product chrome.
+ * Palette: Carbon Navy 60% · Glacier Sage 30% · Yuzu Neon 10%.
+ * See docs/design/brand-guidelines.md
+ */
+
+:root {
+  --mos-carbon: #1b2130;
+  --mos-sage: #b8c7c0;
+  --mos-yuzu: #e8ff2a;
+  /* Near-black ink on yuzu — carbon alone can wash out under antialiasing on neon. */
+  --mos-ink: #07090e;
+
+  --mos-bg: var(--mos-carbon);
+  --mos-fg: #f2f6f4;
+  /* Slightly lifted sage for body-secondary (≥4.5:1 on carbon). */
+  --mos-muted: #c5d4cd;
+  --mos-surface: rgb(184 199 192 / 0.12);
+  --mos-surface-2: rgb(184 199 192 / 0.18);
+  --mos-border: rgb(184 199 192 / 0.38);
+  --mos-primary: var(--mos-yuzu);
+  --mos-primary-strong: #d4eb18;
+  --mos-accent: var(--mos-yuzu);
+  --mos-on-accent: var(--mos-ink);
+  --mos-success: #7dcfb6;
+  --mos-warning: #e6c35c;
+  --mos-danger: #f07178;
+  --mos-glow: rgb(232 255 42 / 0.16);
+  --mos-grid: rgb(184 199 192 / 0.06);
+  --mos-radius: 0.85rem;
+  --mos-font: var(--font-plus-jakarta), ui-sans-serif, system-ui, sans-serif;
+  --mos-mono: var(--font-jetbrains), ui-monospace, monospace;
+  --mos-target: 2.75rem;
+  --mos-topbar-h: 4.25rem;
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+html {
+  scroll-padding-top: var(--mos-topbar-h);
+}
+
+body.mos {
+  background: var(--mos-bg);
+  color: var(--mos-fg);
+  font-family: var(--mos-font);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "ss01", "cv11";
+}
+
+a {
+  color: var(--mos-yuzu);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+}
+
+a:hover {
+  color: #f5ff9c;
+}
+
+a:focus-visible {
+  outline: 3px solid var(--mos-yuzu);
+  outline-offset: 3px;
+  border-radius: 0.2rem;
+}
+
+::placeholder {
+  color: var(--mos-muted);
+  opacity: 1;
+}
+
+.mos-skip {
+  position: absolute;
+  left: 0.75rem;
+  top: 0.75rem;
+  z-index: 100;
+  padding: 0.55rem 0.9rem;
+  border-radius: 0.55rem;
+  background: var(--mos-yuzu);
+  color: var(--mos-ink);
+  font-weight: 700;
+  text-decoration: none;
+  transform: translateY(-160%);
+}
+
+.mos-skip:focus {
+  transform: translateY(0);
+  outline: 3px solid var(--mos-fg);
+  outline-offset: 3px;
+}
+
+h1,
+h2,
+h3 {
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  font-weight: 700;
+}
+
+h1 {
+  font-size: 1.65rem;
+  margin: 0 0 0.75rem;
+}
+
+h2 {
+  font-size: 1.2rem;
+  margin: 0 0 0.5rem;
+}
+
+p {
+  margin: 0 0 0.75rem;
+}
+
+/* Ambient field — sage grid + soft yuzu glow */
+.mos-ambient {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(var(--mos-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--mos-grid) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse at 50% 0%, black 28%, transparent 78%);
+}
+
+.mos-ambient::before,
+.mos-ambient::after {
+  content: "";
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(96px);
+  background: var(--mos-glow);
+  animation: mos-drift 24s ease-in-out infinite alternate;
+}
+
+.mos-ambient::before {
+  width: 42vw;
+  height: 42vw;
+  top: -12vw;
+  left: -8vw;
+}
+
+.mos-ambient::after {
+  width: 36vw;
+  height: 36vw;
+  right: -10vw;
+  bottom: 8vw;
+  background: rgb(184 199 192 / 0.14);
+  animation-delay: -8s;
+}
+
+@keyframes mos-drift {
+  from {
+    transform: translate(0, 0);
+  }
+  to {
+    transform: translate(4vw, 3vh);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mos-ambient::before,
+  .mos-ambient::after {
+    animation: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+.glass {
+  background: var(--mos-surface);
+  border: 1px solid var(--mos-border);
+  backdrop-filter: blur(18px) saturate(130%);
+  -webkit-backdrop-filter: blur(18px) saturate(130%);
+}
+
+.focus-ring:focus-visible,
+.mos-input input:focus-visible,
+.mos-input textarea:focus-visible,
+.mos-input select:focus-visible,
+.app-nav a:focus-visible,
+.app-mobile-nav a:focus-visible,
+.app-select:focus-visible {
+  outline: 3px solid var(--mos-yuzu);
+  outline-offset: 2px;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* App shell */
+.app-shell {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  min-height: 100vh;
+}
+
+.app-sidebar {
+  position: sticky;
+  top: 0;
+  display: none;
+  width: 15.5rem;
+  flex-shrink: 0;
+  height: 100vh;
+  padding: 1.25rem 1rem;
+  flex-direction: column;
+  gap: 1.25rem;
+  border-right: 1px solid var(--mos-border);
+  background: rgb(27 33 48 / 0.88);
+  backdrop-filter: blur(18px);
+}
+
+@media (min-width: 960px) {
+  .app-sidebar {
+    display: flex;
+  }
+}
+
+.app-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.25rem 0.4rem;
+  color: var(--mos-fg);
+  text-decoration: none;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.app-brand:hover {
+  color: var(--mos-fg);
+}
+
+.app-brand-mark {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 0.15rem;
+  background: var(--mos-yuzu);
+  box-shadow: 0 0 16px rgb(232 255 42 / 0.45);
+}
+
+.app-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.app-nav a {
+  display: flex;
+  align-items: center;
+  min-height: var(--mos-target);
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.55rem;
+  color: var(--mos-muted);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.92rem;
+  transition:
+    background 160ms ease,
+    color 160ms ease;
+}
+
+.app-nav a:hover {
+  background: var(--mos-surface-2);
+  color: var(--mos-fg);
+}
+
+.app-nav a[aria-current="page"] {
+  background: rgb(232 255 42 / 0.14);
+  color: var(--mos-yuzu);
+  font-weight: 650;
+  box-shadow: inset 3px 0 0 var(--mos-yuzu);
+}
+
+.app-sidebar-foot {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  font-size: 0.8rem;
+  color: var(--mos-muted);
+}
+
+.app-main {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.app-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 1.1rem;
+  border-bottom: 1px solid var(--mos-border);
+  background: rgb(27 33 48 / 0.72);
+  backdrop-filter: blur(14px);
+}
+
+@media (min-width: 960px) {
+  .app-topbar-signout {
+    display: none;
+  }
+}
+
+.app-topbar-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.85rem;
+  font-size: 0.85rem;
+  color: var(--mos-muted);
+}
+
+.app-content {
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 1.35rem 1.1rem 2.5rem;
+  flex: 1;
+}
+
+@media (min-width: 960px) {
+  .app-content {
+    padding: 1.75rem 2rem 3rem;
+  }
+}
+
+.app-mobile-nav {
+  display: flex;
+  gap: 0.35rem;
+  overflow-x: auto;
+  padding: 0.65rem 1.1rem;
+  border-bottom: 1px solid var(--mos-border);
+}
+
+@media (min-width: 960px) {
+  .app-mobile-nav {
+    display: none;
+  }
+}
+
+.app-mobile-nav a {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--mos-target);
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid var(--mos-border);
+  color: var(--mos-muted);
+  text-decoration: none;
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
+.app-mobile-nav a[aria-current="page"] {
+  border-color: rgb(232 255 42 / 0.55);
+  color: var(--mos-yuzu);
+  background: rgb(232 255 42 / 0.12);
+  font-weight: 650;
+}
+
+.app-select {
+  font: inherit;
+  color: var(--mos-fg);
+  background: var(--mos-surface-2);
+  border: 1px solid var(--mos-border);
+  border-radius: 0.55rem;
+  padding: 0.35rem 0.55rem;
+}
+
+.app-lede {
+  color: var(--mos-muted);
+  max-width: 42rem;
+}
+
+.app-panel {
+  margin: 1.25rem 0;
+  padding: 1.15rem 1.2rem;
+  border-radius: var(--mos-radius);
+  border: 1px solid var(--mos-border);
+  background: var(--mos-surface);
+  backdrop-filter: blur(14px);
+}
+
+/* UI package hooks — primary CTA is yuzu with near-black ink (never white). */
+.mos-btn {
+  appearance: none;
+  -webkit-appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: var(--mos-target);
+  min-width: var(--mos-target);
+  padding: 0.55rem 1.05rem;
+  border: 2px solid transparent;
+  border-radius: 0.55rem;
+  background: var(--mos-yuzu);
+  background-color: var(--mos-yuzu);
+  color: var(--mos-ink);
+  -webkit-text-fill-color: var(--mos-ink);
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+  cursor: pointer;
+  -webkit-font-smoothing: auto;
+  text-shadow: none;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+}
+
+.mos-btn:hover:not(:disabled) {
+  background: var(--mos-primary-strong);
+  background-color: var(--mos-primary-strong);
+  color: var(--mos-ink);
+  -webkit-text-fill-color: var(--mos-ink);
+}
+
+.mos-btn:focus-visible {
+  /* Yuzu-on-yuzu fails; use light ring with carbon halo. */
+  outline: 3px solid var(--mos-fg);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 6px rgb(7 9 14 / 0.85);
+}
+
+.mos-btn:disabled {
+  background: rgb(184 199 192 / 0.22);
+  background-color: rgb(184 199 192 / 0.22);
+  color: rgb(242 246 244 / 0.55);
+  -webkit-text-fill-color: rgb(242 246 244 / 0.55);
+  cursor: not-allowed;
+}
+
+.mos-btn-ghost {
+  background: transparent;
+  background-color: transparent;
+  color: var(--mos-fg);
+  -webkit-text-fill-color: var(--mos-fg);
+  border-color: var(--mos-border);
+  font-weight: 600;
+}
+
+.mos-btn-ghost:hover:not(:disabled) {
+  background: var(--mos-surface-2);
+  background-color: var(--mos-surface-2);
+  color: var(--mos-fg);
+  -webkit-text-fill-color: var(--mos-fg);
+}
+
+.mos-btn-ghost:focus-visible {
+  outline: 3px solid var(--mos-yuzu);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+.mos-btn-ghost:disabled {
+  background: transparent;
+  background-color: transparent;
+  color: rgb(197 212 205 / 0.45);
+  -webkit-text-fill-color: rgb(197 212 205 / 0.45);
+  border-color: rgb(184 199 192 / 0.2);
+}
+
+.mos-input {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 0.85rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--mos-fg);
+}
+
+.mos-input > span {
+  color: var(--mos-muted);
+}
+
+.mos-input .mos-required {
+  margin-left: 0.2rem;
+  color: var(--mos-yuzu);
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.mos-input input,
+.mos-input textarea,
+.mos-input select {
+  appearance: none;
+  -webkit-appearance: none;
+  font: inherit;
+  color: var(--mos-fg);
+  -webkit-text-fill-color: var(--mos-fg);
+  background: rgb(184 199 192 / 0.22);
+  border: 1.5px solid rgb(184 199 192 / 0.48);
+  border-radius: 0.55rem;
+  min-height: var(--mos-target);
+  padding: 0.55rem 0.75rem;
+  -webkit-font-smoothing: auto;
+}
+
+.mos-input input:hover,
+.mos-input textarea:hover,
+.mos-input select:hover {
+  border-color: rgb(184 199 192 / 0.7);
+}
+
+.mos-input input:user-invalid,
+.mos-input textarea:user-invalid,
+.mos-input select:user-invalid {
+  border-color: var(--mos-danger);
+}
+
+.mos-empty,
+.mos-error {
+  padding: 1.1rem 1.2rem;
+  border-radius: var(--mos-radius);
+  border: 1px solid var(--mos-border);
+  background: var(--mos-surface);
+}
+
+.mos-error {
+  border-color: rgb(240 113 120 / 0.45);
+}
+
+.mos-empty h2,
+.mos-error h2 {
+  margin: 0 0 0.35rem;
+}
+
+.mos-empty p,
+.mos-error p {
+  margin: 0;
+  color: var(--mos-muted);
+}
+
+.mos-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.mos-table th,
+.mos-table td {
+  text-align: left;
+  padding: 0.65rem 0.55rem;
+  border-bottom: 1px solid var(--mos-border);
+}
+
+.mos-table th {
+  color: var(--mos-muted);
+  font-weight: 600;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.mos-public {
+  position: relative;
+  z-index: 1;
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 3.5rem 1.25rem;
+}
+
+.mos-public-card {
+  padding: 1.5rem;
+  border-radius: calc(var(--mos-radius) + 0.15rem);
+}

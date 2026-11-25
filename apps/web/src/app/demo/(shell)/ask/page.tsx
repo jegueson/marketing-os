@@ -51,7 +51,7 @@ export default function AskPage() {
               <motion.p
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="ml-auto max-w-[80%] rounded-2xl rounded-br-md bg-primary px-4 py-2.5 text-sm text-white shadow-[0_8px_24px_-10px_rgb(37_99_235/0.8)]"
+                className="ml-auto max-w-[80%] rounded-2xl rounded-br-md bg-primary px-4 py-2.5 text-sm text-on-primary shadow-[0_8px_24px_-10px_rgb(37_99_235/0.8)]"
               >
                 {turn.question}
               </motion.p>
@@ -92,7 +92,7 @@ export default function AskPage() {
                 className="min-w-0 flex-1 bg-transparent py-2 text-sm outline-none placeholder:text-muted/70"
                 autoComplete="off"
               />
-              <button type="submit" disabled={!draft.trim() || thinking} aria-label="Send question" className="focus-ring grid size-10 cursor-pointer place-items-center rounded-xl bg-primary text-white transition hover:bg-primary-strong disabled:opacity-40">
+              <button type="submit" disabled={!draft.trim() || thinking} aria-label="Send question" className="focus-ring grid size-10 cursor-pointer place-items-center rounded-xl bg-primary text-on-primary transition hover:bg-primary-strong disabled:opacity-40">
                 <Send aria-hidden="true" className="size-4" />
               </button>
             </div>

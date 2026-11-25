@@ -105,7 +105,7 @@ export function TourOverlay({ step, index, total, onNext, onPrev, onExit }: Prop
             <button
               type="button"
               onClick={onNext}
-              className="focus-ring inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-white transition hover:bg-primary-strong"
+              className="focus-ring inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-on-primary transition hover:bg-primary-strong"
             >
               {last ? "Finish" : "Next"} <ArrowRight aria-hidden="true" className="size-3.5" />
             </button>

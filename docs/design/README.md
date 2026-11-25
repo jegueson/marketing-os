@@ -8,6 +8,8 @@ Product direction: [Planning/prd_v4_addendum.md](../../Planning/prd_v4_addendum.
 
 | Document | What it covers |
 | --- | --- |
+| [brand-guidelines.md](brand-guidelines.md) | Carbon / sage / yuzu palette, type, voice, do/don't |
+| [architecture.md](architecture.md) | Token → shell → feature layering for product + demo |
 | [design-system.md](design-system.md) | Colour, type, motion, components, accessibility |
 | [screens.md](screens.md) | Every screen: purpose, PRD area, interactions, screenshot |
 | [demo-script.md](demo-script.md) | The investor walkthrough with talking points |

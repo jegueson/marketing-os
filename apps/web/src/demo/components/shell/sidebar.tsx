@@ -57,7 +57,7 @@ export function Sidebar({ onNavigate = () => undefined }: { onNavigate?: () => v
       </div>
 
       <div className="glass flex items-center gap-3 rounded-xl p-3">
-        <span className="grid size-8 place-items-center rounded-lg bg-gradient-to-br from-primary to-slate-600 text-xs font-bold text-white">AC</span>
+        <span className="grid size-8 place-items-center rounded-lg bg-gradient-to-br from-primary to-slate-600 text-xs font-bold text-on-primary">AC</span>
         <span className="min-w-0 leading-tight">
           <span className="block truncate text-sm font-medium">{COMPANY.name}</span>
           <span className="block truncate text-[11px] text-muted">{COMPANY.team}</span>

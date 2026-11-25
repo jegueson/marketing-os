@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Button, Form, Input, ErrorState } from "@marketing-os/ui";
 import { publicApi } from "@/lib/api";
 
@@ -13,6 +13,11 @@ export function GetStartedForm({ siteKey }: { siteKey?: string }) {
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!error) return;
+    document.getElementById("form-error-summary")?.focus();
+  }, [error]);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -46,44 +51,54 @@ export function GetStartedForm({ siteKey }: { siteKey?: string }) {
 
   if (done) {
     return (
-      <main>
-        <h1>Thanks</h1>
-        <p>A Success Manager will follow up shortly.</p>
+      <main id="main-content" className="mos-public" tabIndex={-1}>
+        <div className="mos-ambient" aria-hidden="true" />
+        <section className="app-panel mos-public-card glass">
+          <h1>Thanks</h1>
+          <p className="app-lede">A Success Manager will follow up shortly.</p>
+        </section>
       </main>
     );
   }
 
   return (
-    <main>
-      <h1>Get started</h1>
-      {error ? <ErrorState title="Could not submit" body={error} /> : null}
-      <Form onSubmit={onSubmit}>
-        <Input label="Company" name="companyName" required maxLength={200} />
-        <Input label="Contact name" name="contactName" required maxLength={200} />
-        <Input label="Work email" name="email" type="email" required />
-        <Input label="Job title" name="jobTitle" maxLength={200} />
-        <label>
-          How can we help?
-          <select name="intent" defaultValue="expert_services">
-            <option value="expert_services">Expert services</option>
-            <option value="cloud_workspace">Cloud workspace</option>
-            <option value="enterprise_licence">Enterprise licence</option>
-          </select>
-        </label>
-        <Input label="Your main marketing problem" name="majorProblem" maxLength={5000} />
-        <Input label="Anything else we should know" name="notes" maxLength={5000} />
-        <input
-          name="website"
-          tabIndex={-1}
-          autoComplete="off"
-          aria-hidden="true"
-          style={{ position: "absolute", left: "-10000px" }}
-        />
-        {siteKey ? <div className="cf-turnstile" data-sitekey={siteKey} /> : null}
-        <Button type="submit" disabled={busy}>
-          Submit
-        </Button>
-      </Form>
+    <main id="main-content" className="mos-public" tabIndex={-1}>
+      <div className="mos-ambient" aria-hidden="true" />
+      <section className="app-panel mos-public-card glass">
+        <h1>Get started</h1>
+        {error ? (
+          <div tabIndex={-1} id="form-error-summary">
+            <ErrorState title="Could not submit" body={error} />
+          </div>
+        ) : null}
+        <Form onSubmit={onSubmit}>
+          <Input label="Company" name="companyName" required maxLength={200} />
+          <Input label="Contact name" name="contactName" required maxLength={200} />
+          <Input label="Work email" name="email" type="email" required />
+          <Input label="Job title" name="jobTitle" maxLength={200} />
+          <label className="mos-input">
+            <span>How can we help?</span>
+            <select name="intent" defaultValue="expert_services" className="app-select">
+              <option value="expert_services">Expert services</option>
+              <option value="cloud_workspace">Cloud workspace</option>
+              <option value="enterprise_licence">Enterprise licence</option>
+            </select>
+          </label>
+          <Input label="Your main marketing problem" name="majorProblem" maxLength={5000} />
+          <Input label="Anything else we should know" name="notes" maxLength={5000} />
+          <input
+            name="website"
+            tabIndex={-1}
+            autoComplete="off"
+            aria-hidden="true"
+            style={{ position: "absolute", left: "-10000px" }}
+          />
+          {siteKey ? <div className="cf-turnstile" data-sitekey={siteKey} /> : null}
+          <Button type="submit" disabled={busy}>
+            Submit
+          </Button>
+        </Form>
+      </section>
     </main>
   );
 }

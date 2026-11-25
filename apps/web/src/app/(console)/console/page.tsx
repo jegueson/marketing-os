@@ -1,18 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { Button } from "@marketing-os/ui";
 import { RequireAuth, type ReadyAuth } from "@/components/auth";
+import { ConsoleFrame } from "@/components/console-frame";
 import { useApi } from "@/components/api-view";
 
 function ConsoleHome({ auth }: { auth: ReadyAuth }) {
   const [features] = useApi<Record<string, boolean>>(auth.api, "/api/v1/me/features");
   return (
-    <>
-      <p>
-        Signed in as {auth.me.email} ({auth.me.staffRole})
+    <section className="app-panel">
+      <h2>Specialist workspace</h2>
+      <p className="app-lede">
+        Signed in as {auth.me.email} ({auth.me.staffRole}). Open a customer to edit profiles, skills,
+        and weekly review workflows.
       </p>
-      <ul>
+      <ul className="app-nav" style={{ flexDirection: "row", flexWrap: "wrap" }}>
         {features.status === "ready" && features.data["nav.leads_admin"] ? (
           <li>
             <Link href="/console/leads">Leads</Link>
@@ -22,16 +24,18 @@ function ConsoleHome({ auth }: { auth: ReadyAuth }) {
           <Link href="/console/customers">Customers</Link>
         </li>
       </ul>
-      <Button onClick={() => void auth.signOut()}>Sign out</Button>
-    </>
+    </section>
   );
 }
 
 export default function ConsoleHomePage() {
   return (
-    <main>
-      <h1>Specialist console</h1>
-      <RequireAuth staff>{(auth) => <ConsoleHome auth={auth} />}</RequireAuth>
-    </main>
+    <RequireAuth staff>
+      {(auth) => (
+        <ConsoleFrame auth={auth} title="Specialist console">
+          <ConsoleHome auth={auth} />
+        </ConsoleFrame>
+      )}
+    </RequireAuth>
   );
 }

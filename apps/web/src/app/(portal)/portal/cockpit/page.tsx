@@ -82,13 +82,17 @@ function Cockpit({ auth, ws }: { auth: ReadyAuth; ws: Membership }) {
 
 export default function CockpitPage() {
   return (
-    <main>
-      <h1>Cockpit</h1>
-      <RequireAuth>
-        {(auth) => (
-          <PortalFrame me={auth.me} api={auth.api}>{(ws) => <Cockpit auth={auth} ws={ws} />}</PortalFrame>
-        )}
-      </RequireAuth>
-    </main>
+    <RequireAuth>
+      {(auth) => (
+        <PortalFrame
+          me={auth.me}
+          api={auth.api}
+          title="Cockpit"
+          onSignOut={() => void auth.signOut()}
+        >
+          {(ws) => <Cockpit auth={auth} ws={ws} />}
+        </PortalFrame>
+      )}
+    </RequireAuth>
   );
 }

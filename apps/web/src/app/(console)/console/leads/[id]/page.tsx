@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { Button, ErrorState, Form, Input } from "@marketing-os/ui";
 import { RequireAuth, type ReadyAuth } from "@/components/auth";
+import { ConsoleFrame } from "@/components/console-frame";
 import { useApi, View } from "@/components/api-view";
 import { nextLeadStatuses } from "@/lib/workspace";
 
@@ -178,9 +179,15 @@ function LeadView({ auth, id }: { auth: ReadyAuth; id: string }) {
 export default function LeadDetailPage() {
   const { id } = useParams<{ id: string }>();
   return (
-    <main>
-      <Link href="/console/leads">All leads</Link>
-      <RequireAuth staff>{(auth) => <LeadView auth={auth} id={id} />}</RequireAuth>
-    </main>
+    <RequireAuth staff>
+      {(auth) => (
+        <ConsoleFrame auth={auth} title="Lead">
+          <p className="app-lede">
+            <Link href="/console/leads">All leads</Link>
+          </p>
+          <LeadView auth={auth} id={id} />
+        </ConsoleFrame>
+      )}
+    </RequireAuth>
   );
 }

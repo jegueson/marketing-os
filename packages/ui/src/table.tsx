@@ -8,7 +8,7 @@ export function Table({
   rows: ReactNode[][];
 }) {
   return (
-    <table>
+    <table className="mos-table">
       <thead>
         <tr>
           {headers.map((header) => (

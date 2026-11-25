@@ -209,13 +209,17 @@ function Integrations({ auth, ws }: { auth: ReadyAuth; ws: Membership }) {
 
 export default function IntegrationsPage() {
   return (
-    <main>
-      <h1>Integrations</h1>
-      <RequireAuth>
-        {(auth) => (
-          <PortalFrame me={auth.me} api={auth.api}>{(ws) => <Integrations auth={auth} ws={ws} />}</PortalFrame>
-        )}
-      </RequireAuth>
-    </main>
+    <RequireAuth>
+      {(auth) => (
+        <PortalFrame
+          me={auth.me}
+          api={auth.api}
+          title="Integrations"
+          onSignOut={() => void auth.signOut()}
+        >
+          {(ws) => <Integrations auth={auth} ws={ws} />}
+        </PortalFrame>
+      )}
+    </RequireAuth>
   );
 }

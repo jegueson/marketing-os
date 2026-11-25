@@ -36,7 +36,7 @@ export function EvidencePanel({ answer }: { answer: AskAnswer | null }) {
             return (
               <motion.li key={`${answer.id}-${item.step}`} initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }} className="relative flex gap-3">
                 <span
-                  className={`relative z-10 grid size-7 shrink-0 place-items-center rounded-full border transition-colors duration-300 ${state === "done" ? "border-primary bg-primary text-white" : state === "running" ? "border-accent bg-surface-2 text-accent" : "border-border bg-surface-2 text-muted"}`}
+                  className={`relative z-10 grid size-7 shrink-0 place-items-center rounded-full border transition-colors duration-300 ${state === "done" ? "border-primary bg-primary text-on-primary" : state === "running" ? "border-accent bg-surface-2 text-accent" : "border-border bg-surface-2 text-muted"}`}
                 >
                   {state === "done" ? <Check aria-hidden="true" className="size-3.5" /> : state === "running" ? <Loader2 aria-hidden="true" className="size-3.5 animate-spin motion-reduce:animate-none" /> : <span className="text-[10px]">{i + 1}</span>}
                 </span>

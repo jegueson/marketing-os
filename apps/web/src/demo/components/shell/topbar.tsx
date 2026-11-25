@@ -41,7 +41,7 @@ export function Topbar({ onMenu }: { onMenu: () => void }) {
       <button
         type="button"
         onClick={tour.start}
-        className="focus-ring inline-flex cursor-pointer items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-white shadow-[0_6px_20px_-6px_rgb(37_99_235/0.8)] transition hover:bg-primary-strong max-sm:ml-auto"
+        className="focus-ring inline-flex cursor-pointer items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-on-primary shadow-[0_6px_20px_-6px_rgb(232_255_42/0.4)] transition hover:bg-primary-strong max-sm:ml-auto"
       >
         <Presentation aria-hidden="true" className="size-4" />
         <span className="hidden sm:inline">Investor tour</span>
@@ -58,7 +58,7 @@ export function Topbar({ onMenu }: { onMenu: () => void }) {
 
       <span
         title={`${COMPANY.user.name} · ${COMPANY.user.role}`}
-        className="grid size-9 place-items-center rounded-full bg-gradient-to-br from-slate-500 to-primary text-xs font-semibold text-white"
+        className="grid size-9 place-items-center rounded-full bg-gradient-to-br from-slate-500 to-primary text-xs font-semibold text-on-primary"
       >
         {COMPANY.user.initials}
       </span>
