@@ -79,7 +79,7 @@ describe("RestConnector SSRF", () => {
 
 describe("RestConnector query", () => {
   it("a public HTTPS fixture returns a metric row", async () => {
-    const fetchImpl = vi.fn(async (input: RequestInfo | URL) => {
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL, _init?: RequestInit) => {
       const url = String(input);
       if (url.includes("/health")) return new Response(JSON.stringify({ ok: true }));
       return new Response(JSON.stringify({ value: 42, unit: "count" }), {

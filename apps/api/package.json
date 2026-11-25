@@ -26,6 +26,7 @@
     "@marketing-os/knowledge": "workspace:*",
     "@marketing-os/metrics": "workspace:*",
     "@marketing-os/model-gateway": "workspace:*",
+    "@marketing-os/policy": "workspace:*",
     "@marketing-os/schemas": "workspace:*",
     "@marketing-os/workflow": "workspace:*",
     "drizzle-orm": "^0.44.7",

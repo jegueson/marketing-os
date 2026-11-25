@@ -116,20 +116,20 @@ export function assertSafeRestUrl(rawUrl: string): URL {
   try {
     url = new URL(rawUrl);
   } catch {
-    throw new ConnectorError("REST endpoint URL is invalid", "invalid_request");
+    throw new ConnectorError("REST endpoint URL is invalid", "invalid_input");
   }
   if (url.username || url.password) {
-    throw new ConnectorError("REST endpoint must not include credentials in the URL", "invalid_request");
+    throw new ConnectorError("REST endpoint must not include credentials in the URL", "invalid_input");
   }
   if (url.protocol.toLowerCase() !== "https:") {
-    throw new ConnectorError("REST endpoint must use https", "invalid_request");
+    throw new ConnectorError("REST endpoint must use https", "invalid_input");
   }
   const host = url.hostname.toLowerCase();
   if (!host) {
-    throw new ConnectorError("REST endpoint host is required", "invalid_request");
+    throw new ConnectorError("REST endpoint host is required", "invalid_input");
   }
   if (isPrivateOrLoopbackHost(host)) {
-    throw new ConnectorError("REST endpoint host is blocked", "invalid_request");
+    throw new ConnectorError("REST endpoint host is blocked", "invalid_input");
   }
   return url;
 }
@@ -137,6 +137,6 @@ export function assertSafeRestUrl(rawUrl: string): URL {
 /** Only GET is allowed. Refuse before opening a socket. */
 export function assertRestGetMethod(method: string): void {
   if (method.toUpperCase() !== "GET") {
-    throw new ConnectorError("REST connector only allows GET", "invalid_request");
+    throw new ConnectorError("REST connector only allows GET", "invalid_input");
   }
 }

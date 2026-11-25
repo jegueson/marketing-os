@@ -2558,7 +2558,8 @@
               "running",
               "succeeded",
               "failed",
-              "cancelled"
+              "cancelled",
+              "awaiting_approval"
             ]
           },
           "errorCode": {

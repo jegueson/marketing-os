@@ -8,6 +8,7 @@ import {
   loadPublishedBrandProfile,
   loadPublishedBusinessProfile,
   loadPublishedSkill,
+  insertRecommendation,
   loadPublishedWorkflow,
   recordUsage,
   resolveModelCredential,
@@ -71,7 +72,7 @@ const runViewSchema = z
     workflowId: z.string().uuid(),
     workflowVersion: z.number().int(),
     trigger: z.literal("manual"),
-    status: z.enum(["queued", "running", "succeeded", "failed", "cancelled"]),
+    status: z.enum(["queued", "running", "succeeded", "failed", "cancelled", "awaiting_approval"]),
     errorCode: z.string().nullable(),
     steps: z.array(stepSchema),
     report: reportSchema.nullable(),
@@ -221,6 +222,23 @@ async function buildDeps(
     async listActions() {
       throw new AppError("forbidden", "Connector actions are disabled for Sprint 4 workflows", 403);
     },
+    async executeAction() {
+      throw new AppError("forbidden", "Connector actions are disabled for Sprint 4 workflows", 403);
+    },
+    async writeRecommendation(draft) {
+      await withContext(db, { tenantId: draft.tenantId, userId: null, staff: false }, (tx: Database) =>
+        insertRecommendation(tx, {
+          tenantId: draft.tenantId,
+          workspaceId: draft.workspaceId,
+          problem: draft.problem,
+          evidence: draft.evidence,
+          proposedAction: draft.proposedAction,
+          expectedImpact: draft.expectedImpact,
+          confidence: draft.confidence,
+          effort: draft.effort,
+        }),
+      );
+    },
     async loadBusinessProfile(tenantId, wsId) {
       return withContext(db, { tenantId, userId: null, staff: false }, (tx: Database) =>
         loadPublishedBusinessProfile(tx, { tenantId, workspaceId: wsId }),
@@ -236,20 +254,20 @@ async function buildDeps(
         loadPublishedSkill(tx, { tenantId, workspaceId: wsId, name, version }),
       );
     },
-    async retrieveKnowledge(input) {
-      return withContext(db, { tenantId: input.tenantId, userId: null, staff: false }, async (tx) =>
+    async retrieveKnowledge(knowledge) {
+      return withContext(db, { tenantId: knowledge.tenantId, userId: null, staff: false }, async (tx) =>
         retrieveKnowledge(
           {
-            tenantId: input.tenantId,
-            workspaceId: input.workspaceId,
-            sourceIds: input.sourceIds,
-            query: input.query,
+            tenantId: knowledge.tenantId,
+            workspaceId: knowledge.workspaceId,
+            sourceIds: knowledge.sourceIds,
+            query: knowledge.query,
             model: credential.defaultModel ?? "text-embedding-3-small",
           },
           {
             gateway: withLedger(appDeps.createModelGateway(credential, config, c.env), sink, {
-              tenantId: input.tenantId,
-              workspaceId: input.workspaceId,
+              tenantId: knowledge.tenantId,
+              workspaceId: knowledge.workspaceId,
               userId: c.get("principal").userId,
               runId: input.runId,
               purpose: "knowledge",
@@ -267,8 +285,8 @@ async function buildDeps(
           eventType: event.eventType,
           tenantId: event.tenantId,
           workspaceId: event.workspaceId,
-          resourceType: event.resourceType,
-          resourceId: event.resourceId,
+          ...(event.resourceType !== undefined ? { resourceType: event.resourceType } : {}),
+          ...(event.resourceId !== undefined ? { resourceId: event.resourceId } : {}),
           payload: event.payload ?? {},
           actorId: c.get("principal").userId,
         }),
@@ -361,7 +379,7 @@ workflowRunRoutes.openapi(createRoute, async (c) => {
       },
     });
     if (!updated) throw new NotFoundError("Workflow run not found");
-    await recordAudit(tx, {
+    await writeAuditEvent(tx, {
       eventType: "config.workflow_test_run",
       tenantId: access.tenantId,
       workspaceId: workspace,

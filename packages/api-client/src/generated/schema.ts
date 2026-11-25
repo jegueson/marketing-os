@@ -5508,7 +5508,7 @@ export interface components {
             /** @enum {string} */
             trigger: "manual";
             /** @enum {string} */
-            status: "queued" | "running" | "succeeded" | "failed" | "cancelled";
+            status: "queued" | "running" | "succeeded" | "failed" | "cancelled" | "awaiting_approval";
             errorCode: string | null;
             steps: components["schemas"]["WorkflowRunStep"][];
             report: components["schemas"]["WorkflowRunReport"];
