@@ -21,7 +21,7 @@
     "build:web": "pnpm --filter @marketing-os/web build"
   },
   "devDependencies": {
-    "@eslint/js": "^9.36.0",
+    "@eslint/js": "^10.0.1",
     "eslint": "^10.14.0",
     "prettier": "^3.10.1",
     "tsx": "^4.20.5",
